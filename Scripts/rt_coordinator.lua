@@ -92,6 +92,13 @@ function M.new_runtime(config)
             end
         end
 
+        if reason == "command" then
+            local s = runtime.state.stats
+            if s.spot_attempted_last > 0 and s.spot_changed_last == 0 then
+                log("diag command apply produced zero spotlight numeric changes; verify config multipliers/absolute values")
+            end
+        end
+
         if reason == "startup" and not runtime.state.warned_noop_tuning then
             if not spotlight_mod.is_tuning_effective(runtime.config) then
                 runtime.state.warned_noop_tuning = true
