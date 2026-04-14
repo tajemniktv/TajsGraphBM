@@ -1,0 +1,27 @@
+local stats_mod = require("rt_stats")
+
+local M = {
+    __tajsgraph_module = "rt_state"
+}
+
+function M.new_state(config)
+    return {
+        config = config,
+        in_progress = false,
+        apply_cycle = 0,
+        loop_started = false,
+        backup_tick_counter = 0,
+        backup_diag_counter = 0,
+        loop_generation = 0,
+        warned_noop_tuning = false,
+        warned_no_render_targets = false,
+        spawn_patch_count = 0,
+        spawn_log_batch = 25,
+        light_entries = {},
+        stats = stats_mod.new_stats(),
+        backup_loop_handle = nil,
+        transition_apply_handle = nil,
+    }
+end
+
+return M
