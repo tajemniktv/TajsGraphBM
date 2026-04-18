@@ -22,6 +22,8 @@ function M.new_stats()
         spot_changed_total = 0,
         spot_failed_last = 0,
         spot_failed_total = 0,
+        mobility_fail_last = 0,
+        mobility_fail_total = 0,
 
         megalights_attempts_last = 0,
         megalights_attempts_total = 0,
@@ -46,6 +48,7 @@ function M.reset_last_counters(state)
     s.spot_attempted_last = 0
     s.spot_changed_last = 0
     s.spot_failed_last = 0
+    s.mobility_fail_last = 0
 
     s.megalights_attempts_last = 0
     s.megalights_success_last = 0

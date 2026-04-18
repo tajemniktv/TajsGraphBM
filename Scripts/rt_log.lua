@@ -5,7 +5,13 @@ local M = {
 local MOD_TAG = "[TajsGraphBM]"
 
 function M.log(message)
-    print(string.format("%s %s", MOD_TAG, tostring(message)))
+    local line = string.format("%s %s", MOD_TAG, tostring(message))
+    local line_with_newline = line .. "\n"
+    if type(Log) == "function" then
+        Log(line_with_newline)
+        return
+    end
+    print(line_with_newline)
 end
 
 function M.safe_call(fn, ...)

@@ -53,6 +53,51 @@ function M.read_bool_property(obj, field)
     return true, value
 end
 
+local function parse_mobility_value(value)
+    if type(value) == "number" then
+        return math.floor(value)
+    end
+
+    local as_string = tostring(value or "")
+    local lower = string.lower(as_string)
+    if lower:find("movable", 1, true) then
+        return 2
+    end
+    if lower:find("stationary", 1, true) then
+        return 1
+    end
+    if lower:find("static", 1, true) then
+        return 0
+    end
+
+    local numeric_match = lower:match("(%d+)")
+    if numeric_match ~= nil then
+        return math.floor(tonumber(numeric_match) or 0)
+    end
+
+    return nil
+end
+
+function M.read_mobility_property(obj)
+    local ok_mobility, mobility = M.safe_get(obj, "Mobility")
+    if ok_mobility then
+        local parsed = parse_mobility_value(mobility)
+        if parsed ~= nil then
+            return true, parsed
+        end
+    end
+
+    local ok_private, mobility_private = M.safe_get(obj, "MobilityPrivate")
+    if ok_private then
+        local parsed_private = parse_mobility_value(mobility_private)
+        if parsed_private ~= nil then
+            return true, parsed_private
+        end
+    end
+
+    return false, nil
+end
+
 function M.object_key(obj)
     local full_name = nil
 

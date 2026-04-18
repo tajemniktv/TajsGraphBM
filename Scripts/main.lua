@@ -220,14 +220,14 @@ register_commands()
 register_transition_hooks()
 register_spawn_listener()
 log(string.format(
-	"diag config tune_enabled=%s mode=%s force_compat=%s movable=%s mobility=%d cast=%s visible=%s",
+	"diag config tune_enabled=%s mode=%s runtime_compat=%s movable=%s mobility=%d cast=%s visible=%s",
 	tostring(CONFIG.spotlight_tune_enabled),
 	tostring(CONFIG.spotlight_tune_mode),
-	tostring(CONFIG.spotlight_force_runtime_compat),
-	tostring(CONFIG.spotlight_force_movable),
-	tonumber(CONFIG.spotlight_force_mobility_value or -1),
-	tostring(CONFIG.spotlight_force_cast_shadows),
-	tostring(CONFIG.spotlight_force_visible_enabled)
+	tostring(CONFIG.spotlight_runtime_compat_enabled),
+	tostring(CONFIG.spotlight_runtime_force_movable),
+	tonumber(CONFIG.spotlight_runtime_mobility_value or -1),
+	tostring(CONFIG.spotlight_runtime_force_cast_shadows),
+	tostring(CONFIG.spotlight_runtime_force_visible_enabled)
 ))
 log(string.format(
 	"diag config auto startup=%s followup=%s transition=%s spawn=%s backup_loop=%s",

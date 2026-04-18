@@ -26,11 +26,12 @@ M.defaults = {
     spotlight_source_radius_multiplier = 1.0,
     spotlight_soft_source_radius_multiplier = 1.0,
     spotlight_source_length_multiplier = 1.0,
-    spotlight_force_runtime_compat = true,
-    spotlight_force_movable = true,
-    spotlight_force_mobility_value = 2,
-    spotlight_force_cast_shadows = true,
-    spotlight_force_visible_enabled = true,
+    -- Spotlight runtime compatibility (separate from numeric tuning)
+    spotlight_runtime_compat_enabled = true,
+    spotlight_runtime_force_movable = true,
+    spotlight_runtime_mobility_value = 2,
+    spotlight_runtime_force_cast_shadows = true,
+    spotlight_runtime_force_visible_enabled = true,
 
     -- MegaLights + Lumen compatibility
     enable_megalights = true,
@@ -86,7 +87,7 @@ local NUMERIC_KEYS = {
     "spotlight_source_radius_multiplier",
     "spotlight_soft_source_radius_multiplier",
     "spotlight_source_length_multiplier",
-    "spotlight_force_mobility_value",
+    "spotlight_runtime_mobility_value",
     "megalights_shadow_method",
     "lumen_gi_method_value",
     "lumen_reflection_method_value",
@@ -104,10 +105,10 @@ local NUMERIC_KEYS = {
 
 local BOOL_KEYS = {
     "spotlight_tune_enabled",
-    "spotlight_force_runtime_compat",
-    "spotlight_force_movable",
-    "spotlight_force_cast_shadows",
-    "spotlight_force_visible_enabled",
+    "spotlight_runtime_compat_enabled",
+    "spotlight_runtime_force_movable",
+    "spotlight_runtime_force_cast_shadows",
+    "spotlight_runtime_force_visible_enabled",
     "enable_megalights",
     "force_lumen_methods",
     "force_lumen_compatibility",
@@ -134,6 +135,23 @@ function M.normalize(config)
         end
     end
 
+    -- Backward-compatible aliases for previous config keys.
+    if config.spotlight_runtime_compat_enabled == nil and config.spotlight_force_runtime_compat ~= nil then
+        config.spotlight_runtime_compat_enabled = config.spotlight_force_runtime_compat
+    end
+    if config.spotlight_runtime_force_movable == nil and config.spotlight_force_movable ~= nil then
+        config.spotlight_runtime_force_movable = config.spotlight_force_movable
+    end
+    if config.spotlight_runtime_mobility_value == nil and config.spotlight_force_mobility_value ~= nil then
+        config.spotlight_runtime_mobility_value = config.spotlight_force_mobility_value
+    end
+    if config.spotlight_runtime_force_cast_shadows == nil and config.spotlight_force_cast_shadows ~= nil then
+        config.spotlight_runtime_force_cast_shadows = config.spotlight_force_cast_shadows
+    end
+    if config.spotlight_runtime_force_visible_enabled == nil and config.spotlight_force_visible_enabled ~= nil then
+        config.spotlight_runtime_force_visible_enabled = config.spotlight_force_visible_enabled
+    end
+
     if config.spotlight_tune_mode ~= "absolute" and config.spotlight_tune_mode ~= "multiplier" then
         config.spotlight_tune_mode = "multiplier"
     end
@@ -154,7 +172,14 @@ function M.normalize(config)
     config.transition_apply_delay_ms = math.max(100, math.floor(config.transition_apply_delay_ms))
     config.startup_followup_delay_ms = math.max(250, math.floor(config.startup_followup_delay_ms))
     config.backup_diagnostic_every_ticks = math.max(1, math.floor(config.backup_diagnostic_every_ticks))
-    config.spotlight_force_mobility_value = math.max(0, math.floor(config.spotlight_force_mobility_value))
+    config.spotlight_runtime_mobility_value = math.max(0, math.floor(config.spotlight_runtime_mobility_value))
+
+    -- Keep legacy keys in sync for any old code path.
+    config.spotlight_force_runtime_compat = config.spotlight_runtime_compat_enabled
+    config.spotlight_force_movable = config.spotlight_runtime_force_movable
+    config.spotlight_force_mobility_value = config.spotlight_runtime_mobility_value
+    config.spotlight_force_cast_shadows = config.spotlight_runtime_force_cast_shadows
+    config.spotlight_force_visible_enabled = config.spotlight_runtime_force_visible_enabled
 
     return config
 end

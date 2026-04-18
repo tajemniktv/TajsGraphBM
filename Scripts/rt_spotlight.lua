@@ -159,8 +159,8 @@ local function apply_entry(state, config, entry, force_refresh)
     local s = state.stats
     local entry_changed = false
 
-    if config.spotlight_force_runtime_compat then
-        if config.spotlight_force_visible_enabled then
+    if config.spotlight_runtime_compat_enabled then
+        if config.spotlight_runtime_force_visible_enabled then
             local visibility_changed = false
             if write_bool_if_needed(light, "bAffectsWorld", true, nil, force_refresh) then
                 visibility_changed = true
@@ -176,16 +176,41 @@ local function apply_entry(state, config, entry, force_refresh)
             end
         end
 
-        if config.spotlight_force_cast_shadows then
+        if config.spotlight_runtime_force_cast_shadows then
             if write_bool_if_needed(light, "CastShadows", true, "SetCastShadows", force_refresh) then
                 entry_changed = true
             end
         end
 
-        if config.spotlight_force_movable then
-            if write_number_if_needed(light, "Mobility", config.spotlight_force_mobility_value, "SetMobility", force_refresh) then
-                entry_changed = true
+        if config.spotlight_runtime_force_movable then
+            local target_mobility = config.spotlight_runtime_mobility_value
+            local before_ok, before_mobility = obj_mod.read_mobility_property(light)
+            local wrote_mobility = false
+
+            if force_refresh or (not before_ok) or before_mobility ~= target_mobility then
+                if obj_mod.call_method_if_valid(light, "SetMobility", target_mobility) then
+                    wrote_mobility = true
+                end
+                if obj_mod.safe_set(light, "Mobility", target_mobility) then
+                    wrote_mobility = true
+                end
+                if obj_mod.safe_set(light, "MobilityPrivate", target_mobility) then
+                    wrote_mobility = true
+                end
             end
+
+            local after_ok, after_mobility = obj_mod.read_mobility_property(light)
+            if after_ok and after_mobility == target_mobility then
+                if wrote_mobility then
+                    entry_changed = true
+                end
+            else
+                if wrote_mobility then
+                    s.mobility_fail_last = s.mobility_fail_last + 1
+                    s.mobility_fail_total = s.mobility_fail_total + 1
+                end
+            end
+
         end
     end
 

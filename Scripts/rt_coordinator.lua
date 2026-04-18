@@ -79,7 +79,7 @@ function M.new_runtime(config)
             if emit_regular_diag or emit_backup_diag then
                 local s = runtime.state.stats
                 log(string.format(
-                    "diag apply reason=%s full_scan=%s render=%s force_refresh=%s found=%d->%d cached=%d->%d spot(a/c/f)=%d/%d/%d patch(last/total)=%d/%d",
+                    "diag apply reason=%s full_scan=%s render=%s force_refresh=%s found=%d->%d cached=%d->%d spot(a/c/f)=%d/%d/%d mobility_fail=%d patch(last/total)=%d/%d",
                     tostring(reason),
                     tostring(do_full_scan),
                     tostring(do_render_pass),
@@ -87,6 +87,7 @@ function M.new_runtime(config)
                     found_before, s.lights_found,
                     cached_before, s.lights_cached,
                     s.spot_attempted_last, s.spot_changed_last, s.spot_failed_last,
+                    s.mobility_fail_last,
                     s.lights_patched_last, s.lights_patched_total
                 ))
             end
@@ -165,7 +166,7 @@ function M.new_runtime(config)
     function runtime.status_line()
         local s = runtime.state.stats
         return string.format(
-            "status runs=%d found=%d cached=%d lights_patched(last/total)=%d/%d spot(last a/c/f)=%d/%d/%d spot(total a/c/f)=%d/%d/%d megalights(last a/s/f)=%d/%d/%d lumen(last a/s/f)=%d/%d/%d",
+            "status runs=%d found=%d cached=%d lights_patched(last/total)=%d/%d spot(last a/c/f)=%d/%d/%d spot(total a/c/f)=%d/%d/%d mobility_fail(last/total)=%d/%d megalights(last a/s/f)=%d/%d/%d lumen(last a/s/f)=%d/%d/%d",
             s.apply_runs,
             s.lights_found,
             s.lights_cached,
@@ -177,6 +178,8 @@ function M.new_runtime(config)
             s.spot_attempted_total,
             s.spot_changed_total,
             s.spot_failed_total,
+            s.mobility_fail_last,
+            s.mobility_fail_total,
             s.megalights_attempts_last,
             s.megalights_success_last,
             s.megalights_fail_last,
