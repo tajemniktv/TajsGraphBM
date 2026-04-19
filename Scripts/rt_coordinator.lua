@@ -12,6 +12,147 @@ local M = {
 local log = log_mod.log
 local safe_call = log_mod.safe_call
 
+local function run_console_command(command)
+    if type(command) ~= "string" or command == "" then
+        return false
+    end
+
+    local function try_process_console_exec(target, executor)
+        if target == nil or type(target.ProcessConsoleExec) ~= "function" then
+            return false
+        end
+
+        local ok = safe_call(function()
+            target:ProcessConsoleExec(command, nil, executor or target)
+        end)
+        return ok
+    end
+
+    local ok_viewport, viewport = safe_call(function()
+        if type(FindFirstOf) == "function" then
+            return FindFirstOf("GameViewportClient")
+        end
+        return nil
+    end)
+    if ok_viewport and viewport ~= nil then
+        if try_process_console_exec(viewport, viewport) then
+            return true
+        end
+    end
+
+    local ok_pc, pc = safe_call(function()
+        if type(FindFirstOf) == "function" then
+            return FindFirstOf("PlayerController")
+        end
+        return nil
+    end)
+    if ok_pc and pc ~= nil then
+        local ok_console_call, console_call_result = safe_call(function()
+            if type(pc.ConsoleCommand) == "function" then
+                pc:ConsoleCommand(command)
+                return true
+            end
+            return false
+        end)
+        if ok_console_call and console_call_result == true then
+            return true
+        end
+
+        if try_process_console_exec(pc, pc) then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function schedule_delay(delay_ms, callback)
+    if type(callback) ~= "function" then
+        return false
+    end
+
+    if type(ExecuteInGameThreadWithDelay) == "function" then
+        local ok = safe_call(function()
+            ExecuteInGameThreadWithDelay(delay_ms, callback)
+        end)
+        if ok then
+            return true
+        end
+    end
+
+    if type(ExecuteWithDelay) == "function" then
+        local ok = safe_call(function()
+            ExecuteWithDelay(delay_ms, callback)
+        end)
+        if ok then
+            return true
+        end
+    end
+
+    if type(ExecuteInGameThread) == "function" then
+        local ok = safe_call(function()
+            ExecuteInGameThread(callback)
+        end)
+        if ok then
+            return true
+        end
+    end
+
+    local ok = safe_call(callback)
+    return ok
+end
+
+local function should_run_post_apply_vsm_pulse(config, reason)
+    if config.post_apply_vsm_reload_enabled ~= true then
+        return false
+    end
+
+    if reason == "command" then
+        return true
+    end
+
+    if reason == "rebaseline" and config.post_apply_vsm_reload_on_rebaseline == true then
+        return true
+    end
+
+    return false
+end
+
+local function run_post_apply_vsm_pulse(runtime, reason)
+    local config = runtime.config
+    local off_value = math.floor(tonumber(config.post_apply_vsm_reload_off_value) or 0)
+    local on_value = math.floor(tonumber(config.post_apply_vsm_reload_on_value) or 1)
+    local delay_ms = math.max(0, math.floor(tonumber(config.post_apply_vsm_reload_delay_ms) or 0))
+
+    local cvar_name = "r.shadow.virtual.enable"
+    local off_cmd = string.format("%s %d", cvar_name, off_value)
+    local on_cmd = string.format("%s %d", cvar_name, on_value)
+
+    local off_ok = run_console_command(off_cmd)
+    if not off_ok then
+        log(string.format("diag post-apply VSM pulse failed to run '%s'", off_cmd))
+        return
+    end
+
+    local scheduled = schedule_delay(delay_ms, function()
+        local on_ok = run_console_command(on_cmd)
+        if not on_ok then
+            log(string.format("diag post-apply VSM pulse failed to run '%s'", on_cmd))
+        end
+    end)
+
+    if config.diagnostic_logging then
+        log(string.format(
+            "diag post-apply VSM pulse reason=%s off=%d on=%d delay_ms=%d scheduled=%s",
+            tostring(reason),
+            off_value,
+            on_value,
+            delay_ms,
+            tostring(scheduled)
+        ))
+    end
+end
+
 function M.new_runtime(config)
     local runtime = {}
     runtime.state = state_mod.new_state(config)
@@ -66,7 +207,8 @@ function M.new_runtime(config)
         end
 
         -- Keep normal diagnostics concise; avoid log spam from frequent background applies.
-        local should_log_success = reason == "startup" or reason == "startup_followup" or reason == "command" or reason == "rebaseline"
+        local should_log_success = reason == "startup" or reason == "startup_followup" or reason == "command" or
+        reason == "rebaseline"
         if should_log_success and reason ~= nil and reason ~= "" then
             log("apply ok reason=" .. tostring(reason))
         end
@@ -96,15 +238,21 @@ function M.new_runtime(config)
         if reason == "command" then
             local s = runtime.state.stats
             if s.spot_attempted_last > 0 and s.spot_changed_last == 0 then
-                log("diag command apply produced zero spotlight numeric changes; verify config multipliers/absolute values")
+                log(
+                "diag command apply produced zero spotlight numeric changes; verify config multipliers/absolute values")
             end
         end
 
         if reason == "startup" and not runtime.state.warned_noop_tuning then
             if not spotlight_mod.is_tuning_effective(runtime.config) then
                 runtime.state.warned_noop_tuning = true
-                log("diag spotlight tuning currently has no visual delta (all multipliers are 1.0 or no absolute overrides)")
+                log(
+                "diag spotlight tuning currently has no visual delta (all multipliers are 1.0 or no absolute overrides)")
             end
+        end
+
+        if should_run_post_apply_vsm_pulse(runtime.config, reason) then
+            run_post_apply_vsm_pulse(runtime, reason)
         end
 
         return true

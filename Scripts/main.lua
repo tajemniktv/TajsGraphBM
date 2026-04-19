@@ -237,6 +237,14 @@ log(string.format(
 	tostring(CONFIG.auto_apply_on_spawn),
 	tostring(CONFIG.auto_backup_loop)
 ))
+log(string.format(
+	"diag config post_apply_vsm enabled=%s rebaseline=%s off=%d on=%d delay_ms=%d",
+	tostring(CONFIG.post_apply_vsm_reload_enabled),
+	tostring(CONFIG.post_apply_vsm_reload_on_rebaseline),
+	tonumber(CONFIG.post_apply_vsm_reload_off_value or -1),
+	tonumber(CONFIG.post_apply_vsm_reload_on_value or -1),
+	tonumber(CONFIG.post_apply_vsm_reload_delay_ms or -1)
+))
 if CONFIG.auto_backup_loop == true then
 	runtime.start_backup_loop()
 else

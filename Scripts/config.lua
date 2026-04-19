@@ -17,20 +17,20 @@ M.defaults = {
     spotlight_soft_source_radius = -1.0,
     spotlight_source_length = -1.0,
 
-    spotlight_intensity_multiplier = 1.35,
-    spotlight_indirect_lighting_multiplier = 1.2,
-    spotlight_specular_multiplier = 1.05,
-    spotlight_attenuation_multiplier = 1.15,
-    spotlight_outer_cone_multiplier = 1.05,
-    spotlight_inner_cone_multiplier = 1.0,
-    spotlight_source_radius_multiplier = 1.0,
-    spotlight_soft_source_radius_multiplier = 1.0,
-    spotlight_source_length_multiplier = 1.0,
+    spotlight_intensity_multiplier = 0.90,
+    spotlight_indirect_lighting_multiplier = 1.30,
+    spotlight_specular_multiplier = 1.00,
+    spotlight_attenuation_multiplier = 0.80,
+    spotlight_outer_cone_multiplier = 0.90,
+    spotlight_inner_cone_multiplier = 0.90,
+    spotlight_source_radius_multiplier = 1.00,
+    spotlight_soft_source_radius_multiplier = 1.00,
+    spotlight_source_length_multiplier = 1.00,
     -- Spotlight runtime compatibility (separate from numeric tuning)
     spotlight_runtime_compat_enabled = true,
     spotlight_runtime_force_movable = true,
     spotlight_runtime_mobility_value = 2,
-    spotlight_runtime_force_cast_shadows = true,
+    spotlight_runtime_force_cast_shadows = false,
     spotlight_runtime_force_visible_enabled = true,
 
     -- MegaLights + Lumen compatibility
@@ -66,6 +66,13 @@ M.defaults = {
 
     diagnostic_logging = true,
     backup_diagnostic_every_ticks = 16,
+
+    -- Post-apply render refresh pulse (helps force VSM refresh after runtime writes)
+    post_apply_vsm_reload_enabled = true,
+    post_apply_vsm_reload_on_rebaseline = true,
+    post_apply_vsm_reload_delay_ms = 50,
+    post_apply_vsm_reload_off_value = 0,
+    post_apply_vsm_reload_on_value = 1,
 }
 
 local NUMERIC_KEYS = {
@@ -101,6 +108,9 @@ local NUMERIC_KEYS = {
     "transition_apply_delay_ms",
     "startup_followup_delay_ms",
     "backup_diagnostic_every_ticks",
+    "post_apply_vsm_reload_delay_ms",
+    "post_apply_vsm_reload_off_value",
+    "post_apply_vsm_reload_on_value",
 }
 
 local BOOL_KEYS = {
@@ -122,6 +132,8 @@ local BOOL_KEYS = {
     "auto_apply_on_spawn",
     "auto_backup_loop",
     "diagnostic_logging",
+    "post_apply_vsm_reload_enabled",
+    "post_apply_vsm_reload_on_rebaseline",
 }
 
 function M.normalize(config)
@@ -173,6 +185,7 @@ function M.normalize(config)
     config.startup_followup_delay_ms = math.max(250, math.floor(config.startup_followup_delay_ms))
     config.backup_diagnostic_every_ticks = math.max(1, math.floor(config.backup_diagnostic_every_ticks))
     config.spotlight_runtime_mobility_value = math.max(0, math.floor(config.spotlight_runtime_mobility_value))
+    config.post_apply_vsm_reload_delay_ms = math.max(0, math.floor(config.post_apply_vsm_reload_delay_ms))
 
     -- Keep legacy keys in sync for any old code path.
     config.spotlight_force_runtime_compat = config.spotlight_runtime_compat_enabled
