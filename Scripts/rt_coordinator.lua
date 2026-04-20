@@ -188,7 +188,44 @@ function M.new_runtime(config)
         s.restore_render_failed_last = 0
 
         local spot_summary = spotlight_mod.restore_spotlights(runtime.state, detail_restore_log)
-        local render_summary = render_mod.restore_render_compat(runtime.state)
+        local render_summary = render_mod.restore_render_compat(runtime.state, runtime.config)
+
+        local state_ctx = string.format(
+            "disabled=%s in_progress=%s apply_cycle=%s",
+            tostring(runtime.state.disabled),
+            tostring(runtime.state.in_progress),
+            tostring(runtime.state.apply_cycle)
+        )
+
+        if type(spot_summary) ~= "table" then
+            log(string.format(
+                "restore spotlight summary missing (reason=%s %s); using safe defaults",
+                tostring(reason),
+                state_ctx
+            ))
+            detail_restore_log("spotlight restore summary missing; using safe defaults", "summary")
+            spot_summary = {
+                attempted = 0,
+                restored = 0,
+                skipped = 0,
+                failed = 0,
+                properties_restored = 0,
+                properties_skipped = 0,
+                properties_failed = 0,
+            }
+        end
+
+        if type(render_summary) ~= "table" then
+            log(string.format(
+                "restore render summary missing (reason=%s %s); using safe defaults",
+                tostring(reason),
+                state_ctx
+            ))
+            render_summary = {
+                restored = 0,
+                failed = 0,
+            }
+        end
 
         s.restore_spotlights_attempted_last = spot_summary.attempted
         s.restore_spotlights_attempted_total = s.restore_spotlights_attempted_total + spot_summary.attempted

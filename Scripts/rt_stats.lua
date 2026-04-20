@@ -78,6 +78,16 @@ function M.reset_last_counters(state)
     s.lumen_attempts_last = 0
     s.lumen_success_last = 0
     s.lumen_fail_last = 0
+
+    s.restore_spotlights_attempted_last = 0
+    s.restore_spotlights_restored_last = 0
+    s.restore_spotlights_skipped_last = 0
+    s.restore_spotlights_failed_last = 0
+    s.restore_properties_restored_last = 0
+    s.restore_properties_skipped_last = 0
+    s.restore_properties_failed_last = 0
+    s.restore_render_restored_last = 0
+    s.restore_render_failed_last = 0
 end
 
 function M.count_operation(state, bucket, success)

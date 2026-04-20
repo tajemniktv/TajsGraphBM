@@ -200,7 +200,7 @@ local function apply_entry(state, config, entry, force_refresh)
             entry.original_snapshot = copy_snapshot(entry.baseline)
         end
     elseif entry.original_snapshot == nil then
-        entry.original_snapshot = capture_snapshot(light)
+        entry.original_snapshot = copy_snapshot(entry.baseline)
     end
 
     local should_tune = config.spotlight_tune_enabled == true
@@ -426,7 +426,8 @@ function M.restore_spotlights(state, detail_logger)
                 summary.properties_restored = summary.properties_restored + 1
                 entry_changes = entry_changes + 1
             else
-                summary.properties_skipped = summary.properties_skipped + 1
+                summary.properties_failed = summary.properties_failed + 1
+                entry_failures = entry_failures + 1
             end
         end
 
@@ -435,7 +436,8 @@ function M.restore_spotlights(state, detail_logger)
                 summary.properties_restored = summary.properties_restored + 1
                 entry_changes = entry_changes + 1
             else
-                summary.properties_skipped = summary.properties_skipped + 1
+                summary.properties_failed = summary.properties_failed + 1
+                entry_failures = entry_failures + 1
             end
         end
 
@@ -444,7 +446,8 @@ function M.restore_spotlights(state, detail_logger)
                 summary.properties_restored = summary.properties_restored + 1
                 entry_changes = entry_changes + 1
             else
-                summary.properties_skipped = summary.properties_skipped + 1
+                summary.properties_failed = summary.properties_failed + 1
+                entry_failures = entry_failures + 1
             end
         end
 
@@ -453,7 +456,8 @@ function M.restore_spotlights(state, detail_logger)
                 summary.properties_restored = summary.properties_restored + 1
                 entry_changes = entry_changes + 1
             else
-                summary.properties_skipped = summary.properties_skipped + 1
+                summary.properties_failed = summary.properties_failed + 1
+                entry_failures = entry_failures + 1
             end
         end
 
@@ -483,6 +487,7 @@ function M.restore_spotlights(state, detail_logger)
         end
 
         entry.last_applied = {}
+        entry.baseline = copy_snapshot(entry.original_snapshot)
 
         if entry_failures > 0 then
             summary.failed = summary.failed + 1

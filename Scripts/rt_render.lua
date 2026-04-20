@@ -10,6 +10,18 @@ local log = log_mod.log
 local safe_call = log_mod.safe_call
 local MISSING = {}
 
+local function count_table_entries(t)
+    if type(t) ~= "table" then
+        return 0
+    end
+
+    local count = 0
+    for _ in pairs(t) do
+        count = count + 1
+    end
+    return count
+end
+
 local function track_original_value(state, obj, field)
     if type(state) ~= "table" or type(field) ~= "string" then
         return
@@ -17,6 +29,10 @@ local function track_original_value(state, obj, field)
 
     if not obj_mod.is_valid_object(obj) then
         return
+    end
+
+    if type(state.render_original) ~= "table" then
+        state.render_original = {}
     end
 
     local key = obj_mod.object_key(obj)
@@ -280,25 +296,31 @@ function M.apply_render_compat(state, config)
     end
 end
 
-function M.restore_render_compat(state)
+function M.restore_render_compat(state, config)
     local restored = 0
     local failed = 0
+    local effective_config = config or state.config or {}
+    local originals = state.render_original
+    if type(originals) ~= "table" then
+        originals = {}
+    end
 
-    for key, bucket in pairs(state.render_original) do
-        local obj = bucket.obj
+    for key, bucket in pairs(originals) do
+        local obj = type(bucket) == "table" and bucket.obj or nil
         if not obj_mod.is_valid_object(obj) then
-            failed = failed + 1
+            local field_count = count_table_entries(type(bucket) == "table" and bucket.fields or nil)
+            failed = failed + field_count
             goto continue
         end
 
-        for field, original_value in pairs(bucket.fields or {}) do
+        for field, original_value in pairs((type(bucket) == "table" and bucket.fields) or {}) do
             if original_value ~= MISSING then
                 local ok_write = obj_mod.safe_set(obj, field, original_value)
                 if ok_write then
                     restored = restored + 1
                 else
                     failed = failed + 1
-                    if state.config and state.config.diagnostic_logging then
+                    if effective_config.diagnostic_logging then
                         log(string.format("diag restore render failed key=%s field=%s", tostring(key), tostring(field)))
                     end
                 end

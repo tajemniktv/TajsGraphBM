@@ -38,10 +38,10 @@ M.defaults = {
     force_lumen_methods = true,
     force_lumen_compatibility = true,
 
-    megalights_shadow_method = 0,
+    megalights_shadow_method = 0, -- valid values: 0..2 (int enum)
     lumen_gi_method_value = 1,
     lumen_reflection_method_value = 1,
-    lumen_scene_detail = 4.0,
+    lumen_scene_detail = 8.0, -- valid range: 0.25..8.0 (float)
     lumen_diffuse_color_boost = 1.5,
     lumen_skylight_leaking = 0.05,
     lumen_max_trace_distance = 200000,
@@ -185,6 +185,8 @@ function M.normalize(config)
     config.startup_followup_delay_ms = math.max(250, math.floor(config.startup_followup_delay_ms))
     config.backup_diagnostic_every_ticks = math.max(1, math.floor(config.backup_diagnostic_every_ticks))
     config.spotlight_runtime_mobility_value = math.max(0, math.floor(config.spotlight_runtime_mobility_value))
+    config.megalights_shadow_method = math.max(0, math.min(2, math.floor(config.megalights_shadow_method)))
+    config.lumen_scene_detail = math.max(0.25, math.min(8.0, config.lumen_scene_detail))
     config.post_apply_vsm_reload_delay_ms = math.max(0, math.floor(config.post_apply_vsm_reload_delay_ms))
 
     -- Keep legacy keys in sync for any old code path.

@@ -78,60 +78,48 @@ local function register_commands()
 			part1 = string.lower(tostring(parts[1] or ""))
 		end
 
+		local actions = {
+			apply = function()
+				runtime.apply(true, "command")
+			end,
+			status = function()
+				runtime.print_status()
+			end,
+			rebaseline = function()
+				runtime.rebaseline()
+			end,
+			restore = function()
+				runtime.restore()
+			end,
+			disable = function()
+				runtime.disable()
+			end,
+		}
+
 		local action = nil
 		local action_name = nil
+		local verb = nil
 
 		if cmd_lower == "tajsgraph.apply" or cmd_lower == "tajsgraph_apply" then
-			action_name = "tajsgraph.apply"
-			action = function()
-				runtime.apply(true, "command")
-			end
+			verb = "apply"
 		elseif cmd_lower == "tajsgraph.status" or cmd_lower == "tajsgraph_status" then
-			action_name = "tajsgraph.status"
-			action = function()
-				runtime.print_status()
-			end
+			verb = "status"
 		elseif cmd_lower == "tajsgraph.rebaseline" or cmd_lower == "tajsgraph_rebaseline" then
-			action_name = "tajsgraph.rebaseline"
-			action = function()
-				runtime.rebaseline()
-			end
+			verb = "rebaseline"
 		elseif cmd_lower == "tajsgraph.restore" or cmd_lower == "tajsgraph_restore" then
-			action_name = "tajsgraph.restore"
-			action = function()
-				runtime.restore()
-			end
+			verb = "restore"
 		elseif cmd_lower == "tajsgraph.disable" or cmd_lower == "tajsgraph_disable" then
-			action_name = "tajsgraph.disable"
-			action = function()
-				runtime.disable()
-			end
+			verb = "disable"
 		elseif cmd_lower == "tajsgraph" then
-			if part1 == "apply" then
-				action_name = "tajsgraph.apply"
-				action = function()
-					runtime.apply(true, "command")
-				end
-			elseif part1 == "status" then
-				action_name = "tajsgraph.status"
-				action = function()
-					runtime.print_status()
-				end
-			elseif part1 == "rebaseline" then
-				action_name = "tajsgraph.rebaseline"
-				action = function()
-					runtime.rebaseline()
-				end
-			elseif part1 == "restore" then
-				action_name = "tajsgraph.restore"
-				action = function()
-					runtime.restore()
-				end
-			elseif part1 == "disable" then
-				action_name = "tajsgraph.disable"
-				action = function()
-					runtime.disable()
-				end
+			verb = part1
+		end
+
+		if type(verb) == "string" and verb ~= "" then
+			action = actions[verb]
+			if type(action) == "function" then
+				action_name = "tajsgraph." .. verb
+			else
+				action = nil
 			end
 		end
 
@@ -227,13 +215,17 @@ local function register_spawn_listener()
 		return
 	end
 
-	if type(NotifyOnNewObject) ~= "function" then
+	---@type fun(UClassName: string, Callback: function)|nil
+	local notify_on_new_object = NotifyOnNewObject
+
+	if type(notify_on_new_object) ~= "function" then
 		log("NotifyOnNewObject unavailable; spawn listener disabled")
 		return
 	end
 
 	log("diag hook NotifyOnNewObject SpotLightComponent active")
-	NotifyOnNewObject("/Script/Engine.SpotLightComponent", function(new_object)
+	notify_on_new_object("SpotLightComponent", function(...)
+		local new_object = select(1, ...)
 		safe_run("NotifyOnNewObject SpotLightComponent", function()
 			runtime.on_spotlight_spawned(new_object)
 		end)
