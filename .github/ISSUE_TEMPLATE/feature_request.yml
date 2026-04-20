@@ -1,0 +1,92 @@
+name: Feature Request
+description: Suggest an idea or improvement for TajsGraphBM
+title: "[Feature] "
+labels: ["enhancement"]
+assignees:
+  - tajemniktv
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Thanks for the suggestion
+        Please **search existing issues** before submitting.
+        The best requests explain the problem, propose a solution, and include acceptance criteria.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary of requested feature
+      placeholder: "One or two sentences describing the request"
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Problem / motivation
+      placeholder: "Explain why this is needed and what friction it solves"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed solution
+      placeholder: "Describe desired behavior, UX, defaults, settings, or toggles"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - General
+        - Runtime / visuals
+        - Configuration
+        - Performance / compatibility
+        - Setup / distribution
+        - Diagnostics / tooling
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Small (tweak / small option)
+        - Medium (new setting / moderate logic)
+        - Large (multi-part feature; needs planning)
+        - Not sure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: touched_areas
+    attributes:
+      label: Affected areas
+      options:
+        - label: Scripts / runtime modules
+        - label: Engine.ini / config / profiles
+        - label: Packaging / distribution
+        - label: Diagnostics / status / commands
+        - label: Docs / templates / tooling
+        - label: Not sure
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      placeholder: "Conditions to consider the feature complete"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context (optional)
+      placeholder: "Extra details, mockups, references, or notes"
+    validations:
+      required: false

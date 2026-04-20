@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Project README"
+    url: "https://github.com/tajemniktv/TajsGraphBM/blob/main/README.md"
+    about: "Check installation, setup requirements, and available console commands first."
+  - name: "Manual Test & Regression Checklist"
+    url: "https://github.com/tajemniktv/TajsGraphBM/blob/main/docs/MANUAL_TEST_CHECKLIST.md"
+    about: "Review the recommended sanity checks before reporting regressions or validating changes."
+  - name: "Known Good Versions / Compatibility"
+    url: "https://github.com/tajemniktv/TajsGraphBM/blob/main/docs/KNOWN_GOOD_VERSIONS.md"
+    about: "See the currently recommended BetterMart, UE4SS, and signature/config combinations."

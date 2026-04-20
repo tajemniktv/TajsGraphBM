@@ -141,12 +141,6 @@ function M.normalize(config)
         config = {}
     end
 
-    for key, value in pairs(M.defaults) do
-        if config[key] == nil then
-            config[key] = value
-        end
-    end
-
     -- Backward-compatible aliases for previous config keys.
     if config.spotlight_runtime_compat_enabled == nil and config.spotlight_force_runtime_compat ~= nil then
         config.spotlight_runtime_compat_enabled = config.spotlight_force_runtime_compat
@@ -162,6 +156,12 @@ function M.normalize(config)
     end
     if config.spotlight_runtime_force_visible_enabled == nil and config.spotlight_force_visible_enabled ~= nil then
         config.spotlight_runtime_force_visible_enabled = config.spotlight_force_visible_enabled
+    end
+
+    for key, value in pairs(M.defaults) do
+        if config[key] == nil then
+            config[key] = value
+        end
     end
 
     if config.spotlight_tune_mode ~= "absolute" and config.spotlight_tune_mode ~= "multiplier" then

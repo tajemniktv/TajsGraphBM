@@ -1,0 +1,139 @@
+name: Bug Report
+description: Report a reproducible bug, setup issue, or runtime problem in TajsGraphBM
+title: "[Bug] "
+labels: ["bug"]
+assignees:
+  - tajemniktv
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Thanks for helping improve TajsGraphBM
+        Please **search existing issues** before opening a new one.
+        Include versions, reproduction steps, and logs/screenshots when possible.
+
+  - type: input
+    id: tajsgraphbm_version
+    attributes:
+      label: TajsGraphBM version / commit
+      placeholder: "e.g. main branch, commit abc123"
+    validations:
+      required: true
+
+  - type: input
+    id: bettermart_version
+    attributes:
+      label: BetterMart build / version
+      placeholder: "e.g. 1.2.3"
+    validations:
+      required: true
+
+  - type: input
+    id: ue4ss_version
+    attributes:
+      label: UE4SS version / tag
+      placeholder: "e.g. experimental-latest"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - General
+        - Runtime / visuals
+        - Configuration
+        - Performance
+        - Setup
+        - Crash / instability
+        - Docs / tooling
+        - Other / not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      placeholder: "What happened? What was expected?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "Step-by-step instructions to trigger the bug"
+    validations:
+      required: true
+
+  - type: textarea
+    id: scene_save_context
+    attributes:
+      label: Scene / save context
+      placeholder: "Map, building, or save state where bug occurred"
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      placeholder: "What should have happened?"
+    validations:
+      required: false
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual behavior
+      placeholder: "What happened instead?"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Frequency
+      options:
+        - Every time
+        - Often (>50%)
+        - Sometimes
+        - Rarely
+        - Once
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: "OS, GPU, CPU, driver versions, DX12/Vulkan, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / console output
+      placeholder: "Paste relevant logs or stack traces"
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / additional context
+      placeholder: "Optional screenshots, video, or extra notes"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Please confirm
+      options:
+        - label: I searched existing issues.
+        - label: I provided versions and setup context.
+        - label: I included reproduction steps and expected/actual behavior.
