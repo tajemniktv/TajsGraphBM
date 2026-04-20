@@ -1,3 +1,5 @@
+# Pull Request
+
 ## Summary
 
 What does this PR change? Keep it short and concrete.
@@ -27,8 +29,6 @@ How was this tested?
 
 - BetterMart version/build:
 - UE4SS version/tag:
-- Signature/config source:
-- Commands used:
 - Scene/save tested:
 - Result:
 
