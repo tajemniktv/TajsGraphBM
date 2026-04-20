@@ -1,0 +1,23 @@
+# CMake / build directories
+.build/
+build/
+CppUI/build/
+CMakeUserPresets.json
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+Makefile
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Runtime/deploy build outputs
+dlls/main.dll
+dlls/*.pdb
+
+# Local temp
+*.tmp
