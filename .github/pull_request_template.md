@@ -16,6 +16,18 @@ Link issues here (for example: `Fixes #16`, `Related to #5`).
 - [ ] Docs / tooling / repo hygiene
 - [ ] Other:
 
+## Category
+
+_Select the single best-fit category for this PR._
+
+- [ ] General
+- [ ] Runtime / visuals
+- [ ] Configuration
+- [ ] Performance
+- [ ] Setup / distribution
+- [ ] Tooling / docs
+- [ ] Other / not sure
+
 ## Testing
 
 How was this tested?
