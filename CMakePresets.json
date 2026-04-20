@@ -1,0 +1,68 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 22,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "vs2026-game",
+      "displayName": "VS2026 / Game__Shipping__Win64",
+      "generator": "Visual Studio 18 2026",
+      "binaryDir": "${sourceDir}/.build/vs2026",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "UE4SS_SRC_DIR": "${sourceDir}/../../RE-UE4SS"
+      }
+    },
+    {
+      "name": "ninja-game",
+      "displayName": "Ninja / Game__Shipping__Win64",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/.build/ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Game__Shipping__Win64",
+        "UE4SS_SRC_DIR": "${sourceDir}/../../RE-UE4SS"
+      }
+    },
+    {
+      "name": "ninja-dev",
+      "displayName": "Ninja / Game__Shipping__Win64 lint + compile_commands",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/.build/ninja-dev",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Game__Shipping__Win64",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "UE4SS_SRC_DIR": "${sourceDir}/../../RE-UE4SS"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "build-vs2026-game",
+      "displayName": "Build VS2026 Game__Shipping__Win64",
+      "configurePreset": "vs2026-game",
+      "configuration": "Game__Shipping__Win64",
+      "targets": [
+        "TajsGraphBMNative"
+      ]
+    },
+    {
+      "name": "build-ninja-game",
+      "displayName": "Build Ninja Game__Shipping__Win64",
+      "configurePreset": "ninja-game",
+      "targets": [
+        "TajsGraphBMNative"
+      ]
+    },
+    {
+      "name": "build-ninja-dev",
+      "displayName": "Build Ninja Dev lint preset",
+      "configurePreset": "ninja-dev",
+      "targets": [
+        "TajsGraphBMNative"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": false,
+  "cmake.configurePreset": "vs2026-game",
+  "cmake.buildPreset": "build-vs2026-game",
+  "cmake.buildTarget": "TajsGraphBMNative",
+  "cmake.sourceDirectory": "${workspaceFolder}",
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/.build/ninja-dev/compile_commands.json",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/../../RE-UE4SS/**",
+    "${workspaceFolder}/../../../../../../UE_5.7/Engine/Source/**"
+  ],
+  "clangd.arguments": [
+    "--compile-commands-dir=${workspaceFolder}/.build/ninja-dev"
+  ],
+  "Lua.runtime.version": "Lua 5.4",
+  "Lua.workspace.checkThirdParty": false,
+  "Lua.workspace.library": [
+    "${workspaceFolder}/Scripts",
+    "${workspaceFolder}/luastubs",
+    "${workspaceFolder}/../shared/Types.lua",
+    "${workspaceFolder}/../shared/types",
+    "${workspaceFolder}/../../UE4SS_Signatures"
+  ]
+}
