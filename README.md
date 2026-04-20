@@ -132,8 +132,148 @@ BetterMart\Binaries\Win64\ue4ss\Mods\TajsGraphBM\enabled.txt
 - `tajsgraph.restore` — restore captured original pre-mod spotlight/runtime values, then keep runtime disabled until explicit apply.
 - `tajsgraph.disable` — immediately restore and disable automatic re-application for this session.
 - `tajsgraph.status` — print current counters and disabled state.
+- `tajsgraph.ui.get <key>` — print current config value for a known key.
+- `tajsgraph.ui.set <key> <value>` — update an in-memory config value immediately.
+- `tajsgraph.ui.apply` — apply current in-memory config without restarting the mod.
+- `tajsgraph.ui.reload` — reload `user_config.lua` from disk and apply immediately.
+- `tajsgraph.ui.save` — persist current in-memory config to `user_config.lua`.
+- `tajsgraph.ui.reset_core` — reset core UI keys to defaults, then apply.
+- `tajsgraph.ui.status` — print core config values and runtime counters.
 
 `tajsgraph apply`, `tajsgraph rebaseline`, `tajsgraph status`, `tajsgraph restore`, and `tajsgraph disable` are accepted in space form; underscore aliases are also accepted as `tajsgraph_apply`, `tajsgraph_rebaseline`, `tajsgraph_status`, `tajsgraph_restore`, and `tajsgraph_disable`.
+
+The UI commands also support space form:
+
+- `tajsgraph ui get <key>`
+- `tajsgraph ui set <key> <value>`
+- `tajsgraph ui apply`
+- `tajsgraph ui reload`
+- `tajsgraph ui save`
+- `tajsgraph ui reset_core`
+- `tajsgraph ui status`
+
+---
+
+## User config file
+
+The mod now supports a mod-local settings file:
+
+```text
+BetterMart\Binaries\Win64\ue4ss\Mods\TajsGraphBM\user_config.lua
+```
+
+Format:
+
+```lua
+return {
+    spotlight_tune_enabled = true,
+    spotlight_intensity_multiplier = 0.9,
+    enable_megalights = true,
+}
+```
+
+If the file is missing, defaults are used. Invalid keys/types are sanitized through `config.normalize`.
+
+---
+
+## Optional ImGui UI tab (C++ module)
+
+ImGui tab support is provided by an optional companion C++ mod source in:
+
+```text
+BetterMart\Binaries\Win64\ue4ss\Mods\TajsGraphBM\Native
+```
+
+In this repository layout, Lua and C++ live in the same mod folder (`TajsGraphBM`).
+The built C++ artifact is deployed in-place to:
+
+```text
+BetterMart\Binaries\Win64\ue4ss\Mods\TajsGraphBM\dlls\main.dll
+```
+
+### In-place build (mod root as entry point)
+
+From:
+
+```text
+BetterMart\Binaries\Win64\ue4ss\Mods\TajsGraphBM
+```
+
+Run:
+
+```powershell
+cmake --preset vs2026-game
+cmake --build --preset build-vs2026-game
+```
+
+Or use helper script:
+
+```powershell
+.\build_native.ps1
+```
+
+Lint/intellisense preset (generates `compile_commands.json` for clangd/cpptools):
+
+```powershell
+.\build_native.ps1 -Preset ninja-dev
+```
+
+Output:
+
+```text
+BetterMart\Binaries\Win64\ue4ss\Mods\TajsGraphBM\compile_commands.json
+```
+
+When using VS2026 preset, the script now syncs lint database automatically:
+
+- prefers `.build\vs2026\compile_commands.json` (when generated),
+- otherwise falls back to `.build\ninja-dev\compile_commands.json` (if Ninja is available),
+- and writes unified output to `.\compile_commands.json`.
+
+Default RE-UE4SS source path used by presets:
+
+```text
+..\..\RE-UE4SS
+```
+
+If your RE-UE4SS path differs, override `UE4SS_SRC_DIR` during configure.
+
+### VSCode / Visual Studio usage
+
+VSCode:
+
+1. Install `CMake Tools` extension.
+2. Open folder: `BetterMart\Binaries\Win64\ue4ss\Mods\TajsGraphBM`.
+3. Select configure preset `vs2026-game` (or `ninja-game`).
+4. Build preset `build-vs2026-game` (or `build-ninja-game`).
+
+Visual Studio 2022:
+
+1. Open `Developer PowerShell` in `TajsGraphBM` folder.
+2. Run:
+   - `cmake --preset vs2026-game`
+3. Open generated solution:
+   - `.\.build\vs2022\TajsGraphBMWorkspace.sln`
+4. Build configuration:
+   - `Game__Shipping__Win64`
+
+VSCode linting notes:
+
+1. Open folder `BetterMart\Binaries\Win64\ue4ss\Mods\TajsGraphBM`.
+2. Run `.\build_native.ps1 -Preset vs2026-game` at least once (or `ninja-dev` directly if you prefer).
+3. `.vscode/settings.json` is preconfigured to use:
+   - `compile_commands.json` in mod root for clangd/cpptools fallback.
+   - CMake Tools configuration provider for IntelliSense from active preset.
+   - `Scripts`, `luastubs`, `../shared/types`, and `../../UE4SS_Signatures` for Lua language server.
+4. Optional engine reference include path is pre-added:
+   - `..\..\..\..\..\..\UE_5.7\Engine\Source`
+   Keep this as read-only reference.
+
+Build/install instructions are in:
+
+```text
+BetterMart\Binaries\Win64\ue4ss\Mods\TajsGraphBM\Native\README.md
+```
 
 ---
 
