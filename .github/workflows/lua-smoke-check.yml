@@ -1,0 +1,84 @@
+name: Lua Smoke Check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  lua-smoke-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Lua
+        uses: leafo/gh-actions-lua@v11
+        with:
+          luaVersion: '5.4'
+
+      - name: Compile Lua files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(find Scripts -type f -name '*.lua' | sort)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo 'No Lua files found under Scripts/'
+            exit 1
+          fi
+          for file in "${files[@]}"; do
+            echo "Checking $file"
+            luac -p "$file"
+          done
+
+      - name: Require-shape smoke checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          lua <<'EOF'
+          package.path = table.concat({
+            'Scripts/?.lua',
+            'Scripts/?/init.lua',
+            package.path,
+          }, ';')
+
+          local modules = {
+            { name = 'config', marker = 'config' },
+            { name = 'rt_log', marker = 'rt_log' },
+            { name = 'rt_state', marker = 'rt_state' },
+            { name = 'rt_stats', marker = 'rt_stats' },
+            { name = 'rt_object', marker = 'rt_object' },
+            { name = 'rt_scheduler', marker = 'rt_scheduler' },
+            { name = 'rt_render', marker = 'rt_render' },
+            { name = 'rt_spotlight', marker = 'rt_spotlight' },
+            { name = 'rt_coordinator', marker = 'rt_coordinator' },
+            { name = 'runtime', marker = 'runtime' },
+          }
+
+          for _, entry in ipairs(modules) do
+            local ok, mod = pcall(require, entry.name)
+            if not ok then
+              io.stderr:write(string.format('Failed to require %s: %s\n', entry.name, tostring(mod)))
+              os.exit(1)
+            end
+            if type(mod) ~= 'table' then
+              io.stderr:write(string.format('Module %s did not return a table\n', entry.name))
+              os.exit(1)
+            end
+            if mod.__tajsgraph_module ~= entry.marker then
+              io.stderr:write(string.format('Module %s marker mismatch: expected %s got %s\n', entry.name, entry.marker, tostring(mod.__tajsgraph_module)))
+              os.exit(1)
+            end
+          end
+
+          local config = require('config')
+          local normalized = config.normalize({ spotlight_force_visible_enabled = false })
+          if normalized.spotlight_runtime_force_visible_enabled ~= false then
+            io.stderr:write('Config alias normalization failed: spotlight_force_visible_enabled did not override spotlight_runtime_force_visible_enabled to false\n')
+            os.exit(1)
+          end
+
+          print('Lua smoke checks passed')
+          EOF

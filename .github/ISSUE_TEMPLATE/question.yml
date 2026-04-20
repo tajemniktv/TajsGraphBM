@@ -1,0 +1,65 @@
+name: Question / Support
+description: Ask a question or request help with TajsGraphBM
+title: "[Question]: "
+labels: ["question"]
+assignees:
+  - tajemniktv
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Thanks for reaching out
+        Please search existing issues and documentation before submitting.
+        Use this form for questions, usage help, or clarification requests.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Brief summary of your question
+      placeholder: "Example: Why does a scene only update after a second apply?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      placeholder: "Context, what you tried, expected behavior"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform_target
+    attributes:
+      label: Platform target
+      options:
+        - BetterMart game
+        - UE4SS runtime
+        - Scripts / Mods
+        - Not sure
+    validations:
+      required: false
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      placeholder: "Steps taken to resolve or explore the question"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      placeholder: "Any extra info that might help"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Please confirm
+      options:
+        - label: I searched existing issues.
+        - label: This is a general question or support request, not a bug or feature request.

@@ -1,0 +1,43 @@
+- name: "bug"
+  color: "d73a4a"
+  description: "Something is broken or behaving incorrectly"
+
+- name: "enhancement"
+  color: "a2eeef"
+  description: "New feature or improvement"
+
+- name: "question"
+  color: "d876e3"
+  description: "General question or support request"
+
+- name: "category/general"
+  color: "ededed"
+  description: "General or mixed-scope work"
+
+- name: "category/runtime-visuals"
+  color: "1d76db"
+  description: "Runtime lighting, rendering, or visual behavior"
+
+- name: "category/configuration"
+  color: "fbca04"
+  description: "Config, profiles, Engine.ini, or settings-related work"
+
+- name: "category/performance"
+  color: "5319e7"
+  description: "Performance, efficiency, or runtime overhead"
+
+- name: "category/setup-distribution"
+  color: "0e8a16"
+  description: "Installation, packaging, or distribution workflow"
+
+- name: "category/tooling-docs"
+  color: "0052cc"
+  description: "Tooling, templates, workflows, or documentation"
+
+- name: "category/stability"
+  color: "b60205"
+  description: "Crash, instability, or reliability-related work"
+
+- name: "category/other"
+  color: "c2e0c6"
+  description: "Other or not yet categorized"
