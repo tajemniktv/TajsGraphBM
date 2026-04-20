@@ -136,6 +136,55 @@ local BOOL_KEYS = {
     "post_apply_vsm_reload_on_rebaseline",
 }
 
+M.numeric_keys = NUMERIC_KEYS
+M.bool_keys = BOOL_KEYS
+M.core_ui_keys = {
+    "spotlight_tune_enabled",
+    "spotlight_runtime_compat_enabled",
+    "enable_megalights",
+    "force_lumen_methods",
+    "force_lumen_compatibility",
+    "spotlight_intensity_multiplier",
+    "spotlight_attenuation_multiplier",
+    "megalights_shadow_method",
+    "lumen_scene_detail",
+    "lumen_diffuse_color_boost",
+    "lumen_skylight_leaking",
+}
+
+local KEY_KIND = {
+    spotlight_tune_mode = "string",
+}
+for _, key in ipairs(NUMERIC_KEYS) do
+    KEY_KIND[key] = "number"
+end
+for _, key in ipairs(BOOL_KEYS) do
+    KEY_KIND[key] = "boolean"
+end
+
+function M.key_kind(key)
+    if type(key) ~= "string" then
+        return nil
+    end
+    return KEY_KIND[key]
+end
+
+function M.is_known_key(key)
+    return M.key_kind(key) ~= nil
+end
+
+function M.is_core_ui_key(key)
+    if type(key) ~= "string" then
+        return false
+    end
+    for _, known in ipairs(M.core_ui_keys) do
+        if known == key then
+            return true
+        end
+    end
+    return false
+end
+
 function M.normalize(config)
     if type(config) ~= "table" then
         config = {}

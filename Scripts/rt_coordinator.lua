@@ -158,6 +158,19 @@ function M.new_runtime(config)
     runtime.state = state_mod.new_state(config)
     runtime.config = config
 
+    function runtime.get_config()
+        return runtime.config
+    end
+
+    function runtime.set_config(new_config)
+        if type(new_config) ~= "table" then
+            return false, "new_config must be table"
+        end
+        runtime.config = new_config
+        runtime.state.config = new_config
+        return true, nil
+    end
+
     local function should_skip_apply_when_disabled(reason)
         return runtime.state.disabled == true and reason ~= "command"
     end
