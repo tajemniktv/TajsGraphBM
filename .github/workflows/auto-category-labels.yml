@@ -1,0 +1,177 @@
+name: Auto Category Labels
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+      - reopened
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - ready_for_review
+
+jobs:
+  label-issue-category:
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Apply category label from issue body
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+
+            const categoryLabels = [
+              'category/general',
+              'category/runtime-visuals',
+              'category/configuration',
+              'category/performance',
+              'category/setup-distribution',
+              'category/tooling-docs',
+              'category/stability',
+              'category/other',
+            ];
+
+            const sectionMatch = body.match(/###\s+Category\s*\n\n([\s\S]*?)(?:\n###\s+|$)/i);
+            if (!sectionMatch) {
+              core.info('No Category section found in issue body; skipping.');
+              return;
+            }
+
+            const rawCategory = sectionMatch[1].trim().split('\n')[0].trim();
+            core.info(`Detected issue category: ${rawCategory}`);
+
+            const mapping = {
+              'General': 'category/general',
+              'Runtime / visuals': 'category/runtime-visuals',
+              'Configuration': 'category/configuration',
+              'Performance': 'category/performance',
+              'Performance / compatibility': 'category/performance',
+              'Setup': 'category/setup-distribution',
+              'Setup / distribution': 'category/setup-distribution',
+              'Docs / tooling': 'category/tooling-docs',
+              'Diagnostics / tooling': 'category/tooling-docs',
+              'Crash / instability': 'category/stability',
+              'Other / not sure': 'category/other',
+            };
+
+            const targetLabel = mapping[rawCategory];
+            if (!targetLabel) {
+              core.info('No category label mapping found; skipping.');
+              return;
+            }
+
+            const existing = (issue.labels || []).map(label => typeof label === 'string' ? label : label.name).filter(Boolean);
+            const labelsToRemove = existing.filter(label => categoryLabels.includes(label) && label !== targetLabel);
+
+            for (const label of labelsToRemove) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  name: label,
+                });
+              } catch (error) {
+                core.info(`Could not remove label ${label}: ${error.message}`);
+              }
+            }
+
+            if (!existing.includes(targetLabel)) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: [targetLabel],
+              });
+            }
+
+  label-pr-category:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+      contents: read
+    steps:
+      - name: Apply category label from PR body
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+
+            const categoryLabels = [
+              'category/general',
+              'category/runtime-visuals',
+              'category/configuration',
+              'category/performance',
+              'category/setup-distribution',
+              'category/tooling-docs',
+              'category/stability',
+              'category/other',
+            ];
+
+            const sectionMatch = body.match(/##\s+Category\s*\n\n([\s\S]*?)(?:\n##\s+|$)/i);
+            if (!sectionMatch) {
+              core.info('No Category section found in PR body; skipping.');
+              return;
+            }
+
+            const section = sectionMatch[1];
+            const checkedMatch = section.match(/- \[(?:x|X)\]\s+(.+)/);
+            if (!checkedMatch) {
+              core.info('No checked PR category found; skipping.');
+              return;
+            }
+
+            const rawCategory = checkedMatch[1].trim();
+            core.info(`Detected PR category: ${rawCategory}`);
+
+            const mapping = {
+              'General': 'category/general',
+              'Runtime / visuals': 'category/runtime-visuals',
+              'Configuration': 'category/configuration',
+              'Performance': 'category/performance',
+              'Setup / distribution': 'category/setup-distribution',
+              'Tooling / docs': 'category/tooling-docs',
+              'Other / not sure': 'category/other',
+            };
+
+            const targetLabel = mapping[rawCategory];
+            if (!targetLabel) {
+              core.info('No category label mapping found; skipping.');
+              return;
+            }
+
+            const existing = (pr.labels || []).map(label => typeof label === 'string' ? label : label.name).filter(Boolean);
+            const labelsToRemove = existing.filter(label => categoryLabels.includes(label) && label !== targetLabel);
+
+            for (const label of labelsToRemove) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  name: label,
+                });
+              } catch (error) {
+                core.info(`Could not remove label ${label}: ${error.message}`);
+              }
+            }
+
+            if (!existing.includes(targetLabel)) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: [targetLabel],
+              });
+            }
