@@ -130,10 +130,10 @@ BetterMart\Binaries\Win64\ue4ss\Mods\TajsGraphBM\enabled.txt
 - `tajsgraph.apply` — apply tweaks and re-enable runtime if it was disabled.
 - `tajsgraph.rebaseline` — update the **current apply baseline** from live values (does not overwrite original pre-mod snapshots).
 - `tajsgraph.restore` — restore captured original pre-mod spotlight/runtime values, then keep runtime disabled until explicit apply.
-- `tajsgraph.disable` — immediate restore + disable automatic re-application for this session.
+- `tajsgraph.disable` — immediately restore and disable automatic re-application for this session.
 - `tajsgraph.status` — print current counters and disabled state.
 
-`tajsgraph restore` / `tajsgraph disable` (space form) and underscore aliases are also accepted.
+`tajsgraph apply`, `tajsgraph rebaseline`, `tajsgraph status`, `tajsgraph restore`, and `tajsgraph disable` are accepted in space form; underscore aliases are also accepted as `tajsgraph_apply`, `tajsgraph_rebaseline`, `tajsgraph_status`, `tajsgraph_restore`, and `tajsgraph_disable`.
 
 ---
 
