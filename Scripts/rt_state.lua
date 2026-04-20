@@ -8,6 +8,7 @@ function M.new_state(config)
     return {
         config = config,
         in_progress = false,
+        disabled = false,
         apply_cycle = 0,
         loop_started = false,
         backup_tick_counter = 0,
@@ -18,6 +19,7 @@ function M.new_state(config)
         spawn_patch_count = 0,
         spawn_log_batch = 25,
         light_entries = {},
+        render_original = {},
         stats = stats_mod.new_stats(),
         backup_loop_handle = nil,
         transition_apply_handle = nil,

@@ -38,10 +38,10 @@ M.defaults = {
     force_lumen_methods = true,
     force_lumen_compatibility = true,
 
-    megalights_shadow_method = 2,
+    megalights_shadow_method = 0,
     lumen_gi_method_value = 1,
     lumen_reflection_method_value = 1,
-    lumen_scene_detail = 8.0,
+    lumen_scene_detail = 4.0,
     lumen_diffuse_color_boost = 1.5,
     lumen_skylight_leaking = 0.05,
     lumen_max_trace_distance = 200000,

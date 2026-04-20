@@ -96,6 +96,16 @@ local function register_commands()
 			action = function()
 				runtime.rebaseline()
 			end
+		elseif cmd_lower == "tajsgraph.restore" or cmd_lower == "tajsgraph_restore" then
+			action_name = "tajsgraph.restore"
+			action = function()
+				runtime.restore()
+			end
+		elseif cmd_lower == "tajsgraph.disable" or cmd_lower == "tajsgraph_disable" then
+			action_name = "tajsgraph.disable"
+			action = function()
+				runtime.disable()
+			end
 		elseif cmd_lower == "tajsgraph" then
 			if part1 == "apply" then
 				action_name = "tajsgraph.apply"
@@ -111,6 +121,16 @@ local function register_commands()
 				action_name = "tajsgraph.rebaseline"
 				action = function()
 					runtime.rebaseline()
+				end
+			elseif part1 == "restore" then
+				action_name = "tajsgraph.restore"
+				action = function()
+					runtime.restore()
+				end
+			elseif part1 == "disable" then
+				action_name = "tajsgraph.disable"
+				action = function()
+					runtime.disable()
 				end
 			end
 		end
@@ -165,13 +185,17 @@ local function register_commands()
 	register_command("tajsgraph.apply", command_wrapper)
 	register_command("tajsgraph.status", command_wrapper)
 	register_command("tajsgraph.rebaseline", command_wrapper)
+	register_command("tajsgraph.restore", command_wrapper)
+	register_command("tajsgraph.disable", command_wrapper)
 	register_command("tajsgraph_apply", command_wrapper)
 	register_command("tajsgraph_status", command_wrapper)
 	register_command("tajsgraph_rebaseline", command_wrapper)
+	register_command("tajsgraph_restore", command_wrapper)
+	register_command("tajsgraph_disable", command_wrapper)
 	SHARED.commands_registered = true
 
 	log(string.format(
-		"diag commands registered via %s: tajsgraph[.apply|.status|.rebaseline] (+ underscore aliases)",
+		"diag commands registered via %s: tajsgraph[.apply|.status|.rebaseline|.restore|.disable] (+ underscore aliases)",
 		tostring(backend)
 	))
 end

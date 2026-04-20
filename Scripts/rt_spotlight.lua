@@ -57,6 +57,18 @@ local FIELD_TO_SETTER = {
 
 local safe_call = log_mod.safe_call
 
+local function copy_snapshot(snapshot)
+    if type(snapshot) ~= "table" then
+        return nil
+    end
+
+    local result = {}
+    for key, value in pairs(snapshot) do
+        result[key] = value
+    end
+    return result
+end
+
 local function nearly_equal(a, b)
     return math.abs(a - b) <= EPSILON
 end
@@ -93,6 +105,32 @@ local function capture_snapshot(light)
             snapshot[field] = value
         end
     end
+
+    local ok_affects_world, affects_world = obj_mod.read_bool_property(light, "bAffectsWorld")
+    if ok_affects_world then
+        snapshot.bAffectsWorld = affects_world
+    end
+
+    local ok_visible, visible = obj_mod.read_bool_property(light, "bVisible")
+    if ok_visible then
+        snapshot.bVisible = visible
+    end
+
+    local ok_enabled, enabled = obj_mod.read_bool_property(light, "bEnabled")
+    if ok_enabled then
+        snapshot.bEnabled = enabled
+    end
+
+    local ok_cast, cast_shadows = obj_mod.read_bool_property(light, "CastShadows")
+    if ok_cast then
+        snapshot.CastShadows = cast_shadows
+    end
+
+    local ok_mobility, mobility = obj_mod.read_mobility_property(light)
+    if ok_mobility then
+        snapshot.Mobility = mobility
+    end
+
     return snapshot
 end
 
@@ -132,6 +170,7 @@ local function upsert_light(state, light)
             key = key,
             obj = light,
             baseline = nil,
+            original_snapshot = nil,
             last_applied = {},
             seen_cycle = state.apply_cycle,
         }
@@ -150,9 +189,18 @@ local function apply_entry(state, config, entry, force_refresh)
         return false
     end
 
+    if state.disabled == true then
+        return true
+    end
+
     if entry.baseline == nil then
         -- Baseline is captured once for idempotent multiplier reapply.
         entry.baseline = capture_snapshot(light)
+        if entry.original_snapshot == nil then
+            entry.original_snapshot = copy_snapshot(entry.baseline)
+        end
+    elseif entry.original_snapshot == nil then
+        entry.original_snapshot = capture_snapshot(light)
     end
 
     local should_tune = config.spotlight_tune_enabled == true
@@ -210,7 +258,6 @@ local function apply_entry(state, config, entry, force_refresh)
                     s.mobility_fail_total = s.mobility_fail_total + 1
                 end
             end
-
         end
     end
 
@@ -250,7 +297,8 @@ local function apply_entry(state, config, entry, force_refresh)
     local ok_inner, inner_value = obj_mod.read_numeric_property(light, "InnerConeAngle")
     local ok_outer, outer_value = obj_mod.read_numeric_property(light, "OuterConeAngle")
     if ok_inner and ok_outer and inner_value > outer_value then
-        local ok_fix = obj_mod.set_number_with_setter(light, "InnerConeAngle", outer_value, FIELD_TO_SETTER.InnerConeAngle)
+        local ok_fix = obj_mod.set_number_with_setter(light, "InnerConeAngle", outer_value,
+            FIELD_TO_SETTER.InnerConeAngle)
         if ok_fix then
             entry_changed = true
         end
@@ -320,6 +368,138 @@ function M.rebaseline_spotlights(state)
         end
     end
     return updated
+end
+
+function M.restore_spotlights(state, detail_logger)
+    local summary = {
+        attempted = 0,
+        restored = 0,
+        skipped = 0,
+        failed = 0,
+        properties_restored = 0,
+        properties_skipped = 0,
+        properties_failed = 0,
+    }
+
+    for _, entry in pairs(state.light_entries) do
+        local light = entry.obj
+        summary.attempted = summary.attempted + 1
+
+        if not obj_mod.is_valid_object(light) then
+            summary.skipped = summary.skipped + 1
+            if type(detail_logger) == "function" then
+                detail_logger("skip invalid spotlight", entry.key)
+            end
+            goto continue
+        end
+
+        local snapshot = entry.original_snapshot
+        if type(snapshot) ~= "table" then
+            summary.skipped = summary.skipped + 1
+            if type(detail_logger) == "function" then
+                detail_logger("skip missing original snapshot", entry.key)
+            end
+            goto continue
+        end
+
+        local entry_failures = 0
+        local entry_changes = 0
+
+        for _, field in ipairs(TUNABLE_FIELDS) do
+            local target = snapshot[field]
+            if type(target) == "number" then
+                local ok_write = obj_mod.set_number_with_setter(light, field, target, FIELD_TO_SETTER[field])
+                if ok_write then
+                    summary.properties_restored = summary.properties_restored + 1
+                    entry_changes = entry_changes + 1
+                else
+                    summary.properties_failed = summary.properties_failed + 1
+                    entry_failures = entry_failures + 1
+                end
+            else
+                summary.properties_skipped = summary.properties_skipped + 1
+            end
+        end
+
+        if type(snapshot.bAffectsWorld) == "boolean" then
+            if write_bool_if_needed(light, "bAffectsWorld", snapshot.bAffectsWorld, nil, true) then
+                summary.properties_restored = summary.properties_restored + 1
+                entry_changes = entry_changes + 1
+            else
+                summary.properties_skipped = summary.properties_skipped + 1
+            end
+        end
+
+        if type(snapshot.bVisible) == "boolean" then
+            if write_bool_if_needed(light, "bVisible", snapshot.bVisible, "SetVisibility", true) then
+                summary.properties_restored = summary.properties_restored + 1
+                entry_changes = entry_changes + 1
+            else
+                summary.properties_skipped = summary.properties_skipped + 1
+            end
+        end
+
+        if type(snapshot.bEnabled) == "boolean" then
+            if write_bool_if_needed(light, "bEnabled", snapshot.bEnabled, nil, true) then
+                summary.properties_restored = summary.properties_restored + 1
+                entry_changes = entry_changes + 1
+            else
+                summary.properties_skipped = summary.properties_skipped + 1
+            end
+        end
+
+        if type(snapshot.CastShadows) == "boolean" then
+            if write_bool_if_needed(light, "CastShadows", snapshot.CastShadows, "SetCastShadows", true) then
+                summary.properties_restored = summary.properties_restored + 1
+                entry_changes = entry_changes + 1
+            else
+                summary.properties_skipped = summary.properties_skipped + 1
+            end
+        end
+
+        if type(snapshot.Mobility) == "number" then
+            local target_mobility = math.floor(snapshot.Mobility)
+            local wrote_mobility = false
+            if obj_mod.call_method_if_valid(light, "SetMobility", target_mobility) then
+                wrote_mobility = true
+            end
+            if obj_mod.safe_set(light, "Mobility", target_mobility) then
+                wrote_mobility = true
+            end
+            if obj_mod.safe_set(light, "MobilityPrivate", target_mobility) then
+                wrote_mobility = true
+            end
+            if wrote_mobility then
+                summary.properties_restored = summary.properties_restored + 1
+                entry_changes = entry_changes + 1
+            else
+                summary.properties_failed = summary.properties_failed + 1
+                entry_failures = entry_failures + 1
+            end
+        end
+
+        if entry_changes > 0 then
+            obj_mod.call_method_if_valid(light, "MarkRenderStateDirty")
+        end
+
+        entry.last_applied = {}
+
+        if entry_failures > 0 then
+            summary.failed = summary.failed + 1
+            if type(detail_logger) == "function" then
+                detail_logger(string.format("partial restore failures=%d", entry_failures), entry.key)
+            end
+        else
+            summary.restored = summary.restored + 1
+            if type(detail_logger) == "function" then
+                detail_logger("restored", entry.key)
+            end
+        end
+
+        ::continue::
+    end
+
+    return summary
 end
 
 function M.prune_spotlight_cache(state)

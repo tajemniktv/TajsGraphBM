@@ -125,13 +125,15 @@ BetterMart\Binaries\Win64\ue4ss\Mods\TajsGraphBM\enabled.txt
 1. Launch the game
 2. Load into a save file
 3. Open the in-game console with the **`~`** key
-4. Run:
+4. Run commands as needed:
 
-```text
-tajsgraph.apply
-```
+- `tajsgraph.apply` — apply tweaks and re-enable runtime if it was disabled.
+- `tajsgraph.rebaseline` — update the **current apply baseline** from live values (does not overwrite original pre-mod snapshots).
+- `tajsgraph.restore` — restore captured original pre-mod spotlight/runtime values, then keep runtime disabled until explicit apply.
+- `tajsgraph.disable` — immediate restore + disable automatic re-application for this session.
+- `tajsgraph.status` — print current counters and disabled state.
 
-That should apply the mod's changes.
+`tajsgraph restore` / `tajsgraph disable` (space form) and underscore aliases are also accepted.
 
 ---
 

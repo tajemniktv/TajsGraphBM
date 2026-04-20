@@ -8,6 +8,45 @@ local M = {
 
 local log = log_mod.log
 local safe_call = log_mod.safe_call
+local MISSING = {}
+
+local function track_original_value(state, obj, field)
+    if type(state) ~= "table" or type(field) ~= "string" then
+        return
+    end
+
+    if not obj_mod.is_valid_object(obj) then
+        return
+    end
+
+    local key = obj_mod.object_key(obj)
+    local bucket = state.render_original[key]
+    if bucket == nil then
+        bucket = {
+            obj = obj,
+            fields = {},
+        }
+        state.render_original[key] = bucket
+    else
+        bucket.obj = obj
+    end
+
+    if bucket.fields[field] ~= nil then
+        return
+    end
+
+    local ok_read, current = obj_mod.safe_get(obj, field)
+    if ok_read then
+        bucket.fields[field] = current
+    else
+        bucket.fields[field] = MISSING
+    end
+end
+
+local function tracked_guarded_write(state, obj, field, value, on_operation, bucket)
+    track_original_value(state, obj, field)
+    return obj_mod.guarded_write(obj, field, value, on_operation, bucket)
+end
 
 local function add_unique_target(targets, seen, obj)
     if not obj_mod.is_valid_object(obj) then
@@ -122,6 +161,10 @@ local function collect_world_settings()
 end
 
 function M.apply_render_compat(state, config)
+    if state.disabled == true then
+        return
+    end
+
     local function on_operation(bucket, success)
         stats_mod.count_operation(state, bucket, success)
     end
@@ -149,27 +192,31 @@ function M.apply_render_compat(state, config)
 
     for _, renderer in ipairs(renderer_targets) do
         if config.enable_megalights then
-            obj_mod.guarded_write(renderer, "bEnableMegaLights", true, on_operation, "megalights")
-            obj_mod.guarded_write(renderer, "bUseMegaLights", true, on_operation, "megalights")
-            obj_mod.guarded_write(renderer, "bMegaLights", true, on_operation, "megalights")
-            obj_mod.guarded_write(renderer, "MegaLightsShadowMethod", config.megalights_shadow_method, on_operation, "megalights")
-            obj_mod.guarded_write(renderer, "ShadowMapMethod", config.megalights_shadow_method, on_operation, "megalights")
+            tracked_guarded_write(state, renderer, "bEnableMegaLights", true, on_operation, "megalights")
+            tracked_guarded_write(state, renderer, "bUseMegaLights", true, on_operation, "megalights")
+            tracked_guarded_write(state, renderer, "bMegaLights", true, on_operation, "megalights")
+            tracked_guarded_write(state, renderer, "MegaLightsShadowMethod", config.megalights_shadow_method,
+                on_operation, "megalights")
+            tracked_guarded_write(state, renderer, "ShadowMapMethod", config.megalights_shadow_method, on_operation,
+                "megalights")
         end
 
         if config.force_lumen_methods then
-            obj_mod.guarded_write(renderer, "DynamicGlobalIlluminationMethod", config.lumen_gi_method_value, on_operation, "lumen")
-            obj_mod.guarded_write(renderer, "ReflectionMethod", config.lumen_reflection_method_value, on_operation, "lumen")
+            tracked_guarded_write(state, renderer, "DynamicGlobalIlluminationMethod", config.lumen_gi_method_value,
+                on_operation, "lumen")
+            tracked_guarded_write(state, renderer, "ReflectionMethod", config.lumen_reflection_method_value, on_operation,
+                "lumen")
         end
 
         if config.force_lumen_compatibility then
             if config.lumen_disable_static_lighting then
-                obj_mod.guarded_write(renderer, "bAllowStaticLighting", false, on_operation, "lumen")
+                tracked_guarded_write(state, renderer, "bAllowStaticLighting", false, on_operation, "lumen")
             end
             if config.lumen_enable_mesh_distance_fields then
-                obj_mod.guarded_write(renderer, "bGenerateMeshDistanceFields", true, on_operation, "lumen")
+                tracked_guarded_write(state, renderer, "bGenerateMeshDistanceFields", true, on_operation, "lumen")
             end
             if config.lumen_disable_forward_shading then
-                obj_mod.guarded_write(renderer, "bForwardShading", false, on_operation, "lumen")
+                tracked_guarded_write(state, renderer, "bForwardShading", false, on_operation, "lumen")
             end
         end
     end
@@ -177,32 +224,41 @@ function M.apply_render_compat(state, config)
     for _, ppv in ipairs(ppv_targets) do
         if obj_mod.is_valid_object(ppv) then
             if config.enable_megalights then
-                obj_mod.guarded_write(ppv, "bEnabled", true, on_operation, "megalights")
+                tracked_guarded_write(state, ppv, "bEnabled", true, on_operation, "megalights")
             end
 
             local ok_settings, settings = obj_mod.safe_get(ppv, "Settings")
             if ok_settings and settings ~= nil then
                 if config.enable_megalights then
-                    obj_mod.guarded_write(settings, "bOverride_ShadowMapMethod", true, on_operation, "megalights")
-                    obj_mod.guarded_write(settings, "ShadowMapMethod", config.megalights_shadow_method, on_operation, "megalights")
+                    tracked_guarded_write(state, settings, "bOverride_ShadowMapMethod", true, on_operation, "megalights")
+                    tracked_guarded_write(state, settings, "ShadowMapMethod", config.megalights_shadow_method,
+                        on_operation, "megalights")
                 end
 
                 if config.force_lumen_methods then
-                    obj_mod.guarded_write(settings, "bOverride_DynamicGlobalIlluminationMethod", true, on_operation, "lumen")
-                    obj_mod.guarded_write(settings, "DynamicGlobalIlluminationMethod", config.lumen_gi_method_value, on_operation, "lumen")
-                    obj_mod.guarded_write(settings, "bOverride_ReflectionMethod", true, on_operation, "lumen")
-                    obj_mod.guarded_write(settings, "ReflectionMethod", config.lumen_reflection_method_value, on_operation, "lumen")
+                    tracked_guarded_write(state, settings, "bOverride_DynamicGlobalIlluminationMethod", true,
+                        on_operation, "lumen")
+                    tracked_guarded_write(state, settings, "DynamicGlobalIlluminationMethod",
+                        config.lumen_gi_method_value, on_operation, "lumen")
+                    tracked_guarded_write(state, settings, "bOverride_ReflectionMethod", true, on_operation, "lumen")
+                    tracked_guarded_write(state, settings, "ReflectionMethod", config.lumen_reflection_method_value,
+                        on_operation, "lumen")
                 end
 
                 if config.force_lumen_compatibility then
-                    obj_mod.guarded_write(settings, "bOverride_LumenSceneDetail", true, on_operation, "lumen")
-                    obj_mod.guarded_write(settings, "LumenSceneDetail", config.lumen_scene_detail, on_operation, "lumen")
-                    obj_mod.guarded_write(settings, "bOverride_LumenDiffuseColorBoost", true, on_operation, "lumen")
-                    obj_mod.guarded_write(settings, "LumenDiffuseColorBoost", config.lumen_diffuse_color_boost, on_operation, "lumen")
-                    obj_mod.guarded_write(settings, "bOverride_LumenSkylightLeaking", true, on_operation, "lumen")
-                    obj_mod.guarded_write(settings, "LumenSkylightLeaking", config.lumen_skylight_leaking, on_operation, "lumen")
-                    obj_mod.guarded_write(settings, "bOverride_LumenMaxTraceDistance", true, on_operation, "lumen")
-                    obj_mod.guarded_write(settings, "LumenMaxTraceDistance", config.lumen_max_trace_distance, on_operation, "lumen")
+                    tracked_guarded_write(state, settings, "bOverride_LumenSceneDetail", true, on_operation, "lumen")
+                    tracked_guarded_write(state, settings, "LumenSceneDetail", config.lumen_scene_detail, on_operation,
+                        "lumen")
+                    tracked_guarded_write(state, settings, "bOverride_LumenDiffuseColorBoost", true, on_operation,
+                        "lumen")
+                    tracked_guarded_write(state, settings, "LumenDiffuseColorBoost", config.lumen_diffuse_color_boost,
+                        on_operation, "lumen")
+                    tracked_guarded_write(state, settings, "bOverride_LumenSkylightLeaking", true, on_operation, "lumen")
+                    tracked_guarded_write(state, settings, "LumenSkylightLeaking", config.lumen_skylight_leaking,
+                        on_operation, "lumen")
+                    tracked_guarded_write(state, settings, "bOverride_LumenMaxTraceDistance", true, on_operation, "lumen")
+                    tracked_guarded_write(state, settings, "LumenMaxTraceDistance", config.lumen_max_trace_distance,
+                        on_operation, "lumen")
                 end
             end
         end
@@ -211,15 +267,51 @@ function M.apply_render_compat(state, config)
     for _, world_settings in ipairs(world_targets) do
         if obj_mod.is_valid_object(world_settings) then
             if config.force_lumen_methods then
-                obj_mod.guarded_write(world_settings, "DynamicGlobalIlluminationMethod", config.lumen_gi_method_value, on_operation, "lumen")
-                obj_mod.guarded_write(world_settings, "ReflectionMethod", config.lumen_reflection_method_value, on_operation, "lumen")
+                tracked_guarded_write(state, world_settings, "DynamicGlobalIlluminationMethod",
+                    config.lumen_gi_method_value, on_operation, "lumen")
+                tracked_guarded_write(state, world_settings, "ReflectionMethod", config.lumen_reflection_method_value,
+                    on_operation, "lumen")
             end
 
             if config.force_lumen_compatibility and config.lumen_force_no_precomputed_lighting then
-                obj_mod.guarded_write(world_settings, "bForceNoPrecomputedLighting", true, on_operation, "lumen")
+                tracked_guarded_write(state, world_settings, "bForceNoPrecomputedLighting", true, on_operation, "lumen")
             end
         end
     end
+end
+
+function M.restore_render_compat(state)
+    local restored = 0
+    local failed = 0
+
+    for key, bucket in pairs(state.render_original) do
+        local obj = bucket.obj
+        if not obj_mod.is_valid_object(obj) then
+            failed = failed + 1
+            goto continue
+        end
+
+        for field, original_value in pairs(bucket.fields or {}) do
+            if original_value ~= MISSING then
+                local ok_write = obj_mod.safe_set(obj, field, original_value)
+                if ok_write then
+                    restored = restored + 1
+                else
+                    failed = failed + 1
+                    if state.config and state.config.diagnostic_logging then
+                        log(string.format("diag restore render failed key=%s field=%s", tostring(key), tostring(field)))
+                    end
+                end
+            end
+        end
+
+        ::continue::
+    end
+
+    return {
+        restored = restored,
+        failed = failed,
+    }
 end
 
 return M

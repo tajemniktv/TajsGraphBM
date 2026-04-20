@@ -158,9 +158,88 @@ function M.new_runtime(config)
     runtime.state = state_mod.new_state(config)
     runtime.config = config
 
+    local function should_skip_apply_when_disabled(reason)
+        return runtime.state.disabled == true and reason ~= "command"
+    end
+
+    local function detail_restore_log(message, key)
+        if runtime.config.diagnostic_logging ~= true then
+            return
+        end
+        if type(key) == "string" and key ~= "" then
+            log(string.format("restore %s key=%s", tostring(message), tostring(key)))
+            return
+        end
+        log("restore " .. tostring(message))
+    end
+
+    local function perform_restore(reason)
+        local s = runtime.state.stats
+        s.restore_runs = s.restore_runs + 1
+
+        s.restore_spotlights_attempted_last = 0
+        s.restore_spotlights_restored_last = 0
+        s.restore_spotlights_skipped_last = 0
+        s.restore_spotlights_failed_last = 0
+        s.restore_properties_restored_last = 0
+        s.restore_properties_skipped_last = 0
+        s.restore_properties_failed_last = 0
+        s.restore_render_restored_last = 0
+        s.restore_render_failed_last = 0
+
+        local spot_summary = spotlight_mod.restore_spotlights(runtime.state, detail_restore_log)
+        local render_summary = render_mod.restore_render_compat(runtime.state)
+
+        s.restore_spotlights_attempted_last = spot_summary.attempted
+        s.restore_spotlights_attempted_total = s.restore_spotlights_attempted_total + spot_summary.attempted
+        s.restore_spotlights_restored_last = spot_summary.restored
+        s.restore_spotlights_restored_total = s.restore_spotlights_restored_total + spot_summary.restored
+        s.restore_spotlights_skipped_last = spot_summary.skipped
+        s.restore_spotlights_skipped_total = s.restore_spotlights_skipped_total + spot_summary.skipped
+        s.restore_spotlights_failed_last = spot_summary.failed
+        s.restore_spotlights_failed_total = s.restore_spotlights_failed_total + spot_summary.failed
+
+        s.restore_properties_restored_last = spot_summary.properties_restored
+        s.restore_properties_restored_total = s.restore_properties_restored_total + spot_summary.properties_restored
+        s.restore_properties_skipped_last = spot_summary.properties_skipped
+        s.restore_properties_skipped_total = s.restore_properties_skipped_total + spot_summary.properties_skipped
+        s.restore_properties_failed_last = spot_summary.properties_failed
+        s.restore_properties_failed_total = s.restore_properties_failed_total + spot_summary.properties_failed
+
+        s.restore_render_restored_last = render_summary.restored
+        s.restore_render_restored_total = s.restore_render_restored_total + render_summary.restored
+        s.restore_render_failed_last = render_summary.failed
+        s.restore_render_failed_total = s.restore_render_failed_total + render_summary.failed
+
+        log(string.format(
+            "restore ok reason=%s spotlights(a/r/s/f)=%d/%d/%d/%d props(r/s/f)=%d/%d/%d render(r/f)=%d/%d",
+            tostring(reason),
+            spot_summary.attempted,
+            spot_summary.restored,
+            spot_summary.skipped,
+            spot_summary.failed,
+            spot_summary.properties_restored,
+            spot_summary.properties_skipped,
+            spot_summary.properties_failed,
+            render_summary.restored,
+            render_summary.failed
+        ))
+
+        return true
+    end
+
     function runtime.apply(full_scan, reason)
         if runtime.state.in_progress then
             return false
+        end
+
+        if should_skip_apply_when_disabled(reason) then
+            return true
+        end
+
+        if runtime.state.disabled == true and reason == "command" then
+            runtime.state.disabled = false
+            log("apply command re-enabled runtime")
         end
 
         local do_full_scan = full_scan == true
@@ -208,7 +287,7 @@ function M.new_runtime(config)
 
         -- Keep normal diagnostics concise; avoid log spam from frequent background applies.
         local should_log_success = reason == "startup" or reason == "startup_followup" or reason == "command" or
-        reason == "rebaseline"
+            reason == "rebaseline"
         if should_log_success and reason ~= nil and reason ~= "" then
             log("apply ok reason=" .. tostring(reason))
         end
@@ -239,7 +318,7 @@ function M.new_runtime(config)
             local s = runtime.state.stats
             if s.spot_attempted_last > 0 and s.spot_changed_last == 0 then
                 log(
-                "diag command apply produced zero spotlight numeric changes; verify config multipliers/absolute values")
+                    "diag command apply produced zero spotlight numeric changes; verify config multipliers/absolute values")
             end
         end
 
@@ -247,7 +326,7 @@ function M.new_runtime(config)
             if not spotlight_mod.is_tuning_effective(runtime.config) then
                 runtime.state.warned_noop_tuning = true
                 log(
-                "diag spotlight tuning currently has no visual delta (all multipliers are 1.0 or no absolute overrides)")
+                    "diag spotlight tuning currently has no visual delta (all multipliers are 1.0 or no absolute overrides)")
             end
         end
 
@@ -259,6 +338,10 @@ function M.new_runtime(config)
     end
 
     function runtime.schedule_apply(reason)
+        if should_skip_apply_when_disabled(reason) then
+            return
+        end
+
         if runtime.config.diagnostic_logging and reason ~= "backup_tick" then
             log("diag schedule reason=" .. tostring(reason))
         end
@@ -274,6 +357,10 @@ function M.new_runtime(config)
     end
 
     function runtime.on_spotlight_spawned(light)
+        if runtime.state.disabled == true then
+            return
+        end
+
         local ok, err = safe_call(function()
             runtime.state.apply_cycle = runtime.state.apply_cycle + 1
             stats_mod.reset_last_counters(runtime.state)
@@ -311,11 +398,48 @@ function M.new_runtime(config)
         runtime.apply(false, "rebaseline")
     end
 
+    function runtime.restore()
+        local ok, err = safe_call(function()
+            perform_restore("command_restore")
+        end)
+
+        if not ok then
+            runtime.state.stats.last_error = tostring(err)
+            log("restore failed: " .. runtime.state.stats.last_error)
+            return false
+        end
+
+        runtime.state.disabled = true
+        log("restore complete; runtime is disabled until explicit apply")
+        return true
+    end
+
+    function runtime.disable()
+        runtime.state.stats.disable_runs = runtime.state.stats.disable_runs + 1
+
+        local ok, err = safe_call(function()
+            perform_restore("command_disable")
+        end)
+
+        if not ok then
+            runtime.state.stats.last_error = tostring(err)
+            log("disable failed: " .. runtime.state.stats.last_error)
+            return false
+        end
+
+        runtime.state.disabled = true
+        log("disable complete; runtime auto-apply is suspended")
+        return true
+    end
+
     function runtime.status_line()
         local s = runtime.state.stats
         return string.format(
-            "status runs=%d found=%d cached=%d lights_patched(last/total)=%d/%d spot(last a/c/f)=%d/%d/%d spot(total a/c/f)=%d/%d/%d mobility_fail(last/total)=%d/%d megalights(last a/s/f)=%d/%d/%d lumen(last a/s/f)=%d/%d/%d",
+            "status disabled=%s runs=%d disable_runs=%d restore_runs=%d found=%d cached=%d lights_patched(last/total)=%d/%d spot(last a/c/f)=%d/%d/%d spot(total a/c/f)=%d/%d/%d mobility_fail(last/total)=%d/%d restore_spot(a/r/s/f last)=%d/%d/%d/%d restore_props(r/s/f last)=%d/%d/%d render_restore(r/f last)=%d/%d megalights(last a/s/f)=%d/%d/%d lumen(last a/s/f)=%d/%d/%d",
+            tostring(runtime.state.disabled),
             s.apply_runs,
+            s.disable_runs,
+            s.restore_runs,
             s.lights_found,
             s.lights_cached,
             s.lights_patched_last,
@@ -328,6 +452,15 @@ function M.new_runtime(config)
             s.spot_failed_total,
             s.mobility_fail_last,
             s.mobility_fail_total,
+            s.restore_spotlights_attempted_last,
+            s.restore_spotlights_restored_last,
+            s.restore_spotlights_skipped_last,
+            s.restore_spotlights_failed_last,
+            s.restore_properties_restored_last,
+            s.restore_properties_skipped_last,
+            s.restore_properties_failed_last,
+            s.restore_render_restored_last,
+            s.restore_render_failed_last,
             s.megalights_attempts_last,
             s.megalights_success_last,
             s.megalights_fail_last,

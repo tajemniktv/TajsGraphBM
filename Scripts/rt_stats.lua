@@ -38,6 +38,27 @@ function M.new_stats()
         lumen_success_total = 0,
         lumen_fail_last = 0,
         lumen_fail_total = 0,
+
+        disable_runs = 0,
+        restore_runs = 0,
+        restore_spotlights_attempted_last = 0,
+        restore_spotlights_attempted_total = 0,
+        restore_spotlights_restored_last = 0,
+        restore_spotlights_restored_total = 0,
+        restore_spotlights_skipped_last = 0,
+        restore_spotlights_skipped_total = 0,
+        restore_spotlights_failed_last = 0,
+        restore_spotlights_failed_total = 0,
+        restore_properties_restored_last = 0,
+        restore_properties_restored_total = 0,
+        restore_properties_skipped_last = 0,
+        restore_properties_skipped_total = 0,
+        restore_properties_failed_last = 0,
+        restore_properties_failed_total = 0,
+        restore_render_restored_last = 0,
+        restore_render_restored_total = 0,
+        restore_render_failed_last = 0,
+        restore_render_failed_total = 0,
     }
 end
 
