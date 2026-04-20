@@ -1,0 +1,155 @@
+name: Bug Report
+description: Report a reproducible bug, setup issue, or runtime problem in TajsGraphBM
+title: "[Bug] "
+labels: ["bug"]
+assignees:
+  - tajemniktv
+body:
+  - type: markdown
+    attributes:
+      value: "## Thanks for helping improve TajsGraphBM\nPlease **search existing issues** before opening a new one. Include versions, console commands used, and logs."
+  - type: input
+    id: tajsgraphbm_version
+    attributes:
+      label: TajsGraphBM version/commit
+      placeholder: "e.g. main branch, commit abc123"
+      validations:
+        required: true
+  - type: input
+    id: bettermart_version
+    attributes:
+      label: BetterMart build/version
+      placeholder: "e.g. 1.2.3"
+      validations:
+        required: true
+  - type: input
+    id: ue4ss_version
+    attributes:
+      label: UE4SS version/tag
+      placeholder: "e.g. experimental-latest"
+      validations:
+        required: true
+  - type: input
+    id: signature_source
+    attributes:
+      label: Signature/config set source
+      placeholder: "e.g. RE-UE4SS feat/bettermartconfig"
+      validations:
+        required: true
+  - type: dropdown
+    id: install_method
+    attributes:
+      label: Installation method
+      options:
+        - Manual multi-repo setup
+        - Bundled release
+        - Local dev checkout
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Install/setup
+        - Command behavior
+        - Light patching / runtime tuning
+        - Render/Lumen/MegaLights
+        - Engine.ini / CVars
+        - Performance
+        - Crash / instability
+        - Docs / tooling
+        - Other
+      validations:
+        required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      placeholder: "What happened? What was expected?"
+      validations:
+        required: true
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "Step-by-step instructions to trigger the bug"
+      validations:
+        required: true
+  - type: textarea
+    id: console_commands
+    attributes:
+      label: Console commands used
+      placeholder: "e.g. tajsgraph.apply, tajsgraph.status"
+      validations:
+        required: true
+  - type: textarea
+    id: scene_save_context
+    attributes:
+      label: Scene / save context
+      placeholder: "Map, building, or save state where bug occurred"
+      validations:
+        required: false
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      validations:
+        required: false
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual behavior
+      validations:
+        required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Frequency
+      options:
+        - Every time
+        - Often (>50%)
+        - Sometimes
+        - Rarely
+        - Once
+      validations:
+        required: true
+  - type: checkboxes
+    id: diagnostics
+    attributes:
+      label: Diagnostics checks
+      options:
+        - Ran `tajsgraph.status`
+        - VSM pulse/reload considered
+        - Tested with fresh game launch
+        - Tested without unrelated ini/mod changes
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: "OS, GPU, CPU, driver versions, DX12/Vulkan, etc."
+      validations:
+        required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / console output
+      placeholder: "Paste relevant logs or stack traces"
+      validations:
+        required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / additional context
+      placeholder: "Optional screenshots, video, or extra notes"
+      validations:
+        required: false
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Please confirm
+      options:
+        - Searched existing issues
+        - Provided versions and setup info
+        - Included reproduction steps and expected/actual behavior
