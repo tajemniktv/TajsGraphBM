@@ -1,11 +1,13 @@
 local log_mod = require("rt_log")
 
+---Runtime stats schema and counter helpers.
 local M = {
     __tajsgraph_module = "rt_stats"
 }
 
 local safe_call = log_mod.safe_call
 
+---@return table
 function M.new_stats()
     return {
         apply_runs = 0,
@@ -62,6 +64,7 @@ function M.new_stats()
     }
 end
 
+---@param state table
 function M.reset_last_counters(state)
     local s = state.stats
     s.lights_patched_last = 0
@@ -90,6 +93,9 @@ function M.reset_last_counters(state)
     s.restore_render_failed_last = 0
 end
 
+---@param state table
+---@param bucket string
+---@param success boolean
 function M.count_operation(state, bucket, success)
     local s = state.stats
     if bucket == "megalights" then
@@ -116,6 +122,9 @@ function M.count_operation(state, bucket, success)
     end
 end
 
+---@param state table
+---@param err any
+---@return boolean
 function M.safe_set_last_error(state, err)
     local ok = safe_call(function()
         state.stats.last_error = tostring(err)

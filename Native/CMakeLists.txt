@@ -26,6 +26,7 @@ set(TARGET TajsGraphBMNative)
 add_library(${TARGET} SHARED
     src/console_bridge.cpp
     src/tajsgraph_mod.cpp
+    src/umg_bridge.cpp
     src/mod_entry.cpp
 )
 

@@ -1,11 +1,14 @@
 local log_mod = require("rt_log")
 
+---Safe object accessors and write helpers around UE4SS UObject proxies.
 local M = {
     __tajsgraph_module = "rt_object"
 }
 
 local safe_call = log_mod.safe_call
 
+---@param obj any
+---@return boolean
 function M.is_valid_object(obj)
     if obj == nil then
         return false
@@ -21,6 +24,9 @@ function M.is_valid_object(obj)
     return ok and result == true
 end
 
+---@param obj any
+---@param field string
+---@return boolean, any
 function M.safe_get(obj, field)
     local ok, value = safe_call(function()
         return obj[field]
@@ -31,12 +37,19 @@ function M.safe_get(obj, field)
     return true, value
 end
 
+---@param obj any
+---@param field string
+---@param value any
+---@return boolean
 function M.safe_set(obj, field, value)
     return safe_call(function()
         obj[field] = value
     end)
 end
 
+---@param obj any
+---@param field string
+---@return boolean, number|nil
 function M.read_numeric_property(obj, field)
     local ok, value = M.safe_get(obj, field)
     if not ok or type(value) ~= "number" then
@@ -45,6 +58,9 @@ function M.read_numeric_property(obj, field)
     return true, value
 end
 
+---@param obj any
+---@param field string
+---@return boolean, boolean|nil
 function M.read_bool_property(obj, field)
     local ok, value = M.safe_get(obj, field)
     if not ok or type(value) ~= "boolean" then
@@ -53,6 +69,8 @@ function M.read_bool_property(obj, field)
     return true, value
 end
 
+---@param value any
+---@return integer|nil
 local function parse_mobility_value(value)
     if type(value) == "number" then
         return math.floor(value)
@@ -78,6 +96,8 @@ local function parse_mobility_value(value)
     return nil
 end
 
+---@param obj any
+---@return boolean, integer|nil
 function M.read_mobility_property(obj)
     local ok_mobility, mobility = M.safe_get(obj, "Mobility")
     if ok_mobility then
@@ -98,6 +118,8 @@ function M.read_mobility_property(obj)
     return false, nil
 end
 
+---@param obj any
+---@return string
 function M.object_key(obj)
     local full_name = nil
 
@@ -124,6 +146,13 @@ function M.object_key(obj)
     return full_name
 end
 
+---Safely write one field and feed per-bucket success metrics.
+---@param obj any
+---@param field string
+---@param value any
+---@param on_operation fun(bucket:string, success:boolean)|nil
+---@param bucket string
+---@return boolean
 function M.guarded_write(obj, field, value, on_operation, bucket)
     if not M.is_valid_object(obj) then
         if type(on_operation) == "function" then
@@ -151,6 +180,10 @@ function M.guarded_write(obj, field, value, on_operation, bucket)
     return ok_write
 end
 
+---@param obj any
+---@param method_name string
+---@param ... any
+---@return boolean
 function M.call_method_if_valid(obj, method_name, ...)
     if not M.is_valid_object(obj) then
         return false
@@ -169,6 +202,11 @@ function M.call_method_if_valid(obj, method_name, ...)
     return ok_call
 end
 
+---@param obj any
+---@param field string
+---@param value number
+---@param setter_name string|nil
+---@return boolean
 function M.set_number_with_setter(obj, field, value, setter_name)
     local set_ok = false
     if type(setter_name) == "string" and setter_name ~= "" then

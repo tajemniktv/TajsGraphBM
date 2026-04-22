@@ -5,6 +5,7 @@ local spotlight_mod = require("rt_spotlight")
 local render_mod = require("rt_render")
 local scheduler_mod = require("rt_scheduler")
 
+---Coordinator that orchestrates spotlight, render, scheduling and restore flows.
 local M = {
     __tajsgraph_module = "rt_coordinator"
 }
@@ -12,6 +13,8 @@ local M = {
 local log = log_mod.log
 local safe_call = log_mod.safe_call
 
+---@param command string
+---@return boolean
 local function run_console_command(command)
     if type(command) ~= "string" or command == "" then
         return false
@@ -66,6 +69,9 @@ local function run_console_command(command)
     return false
 end
 
+---@param delay_ms number
+---@param callback fun()
+---@return boolean
 local function schedule_delay(delay_ms, callback)
     if type(callback) ~= "function" then
         return false
@@ -102,6 +108,9 @@ local function schedule_delay(delay_ms, callback)
     return ok
 end
 
+---@param config table
+---@param reason string
+---@return boolean
 local function should_run_post_apply_vsm_pulse(config, reason)
     if config.post_apply_vsm_reload_enabled ~= true then
         return false
@@ -118,6 +127,8 @@ local function should_run_post_apply_vsm_pulse(config, reason)
     return false
 end
 
+---@param runtime table
+---@param reason string
 local function run_post_apply_vsm_pulse(runtime, reason)
     local config = runtime.config
     local off_value = math.floor(tonumber(config.post_apply_vsm_reload_off_value) or 0)
@@ -153,15 +164,21 @@ local function run_post_apply_vsm_pulse(runtime, reason)
     end
 end
 
+---Create a runtime instance bound to one normalized config table.
+---@param config table
+---@return table
 function M.new_runtime(config)
     local runtime = {}
     runtime.state = state_mod.new_state(config)
     runtime.config = config
 
+    ---@return table
     function runtime.get_config()
         return runtime.config
     end
 
+    ---@param new_config table
+    ---@return boolean, string|nil
     function runtime.set_config(new_config)
         if type(new_config) ~= "table" then
             return false, "new_config must be table"
@@ -171,10 +188,14 @@ function M.new_runtime(config)
         return true, nil
     end
 
+    ---@param reason string
+    ---@return boolean
     local function should_skip_apply_when_disabled(reason)
         return runtime.state.disabled == true and reason ~= "command"
     end
 
+    ---@param message string
+    ---@param key string|nil
     local function detail_restore_log(message, key)
         if runtime.config.diagnostic_logging ~= true then
             return
@@ -186,6 +207,8 @@ function M.new_runtime(config)
         log("restore " .. tostring(message))
     end
 
+    ---@param reason string
+    ---@return boolean
     local function perform_restore(reason)
         local s = runtime.state.stats
         s.restore_runs = s.restore_runs + 1
@@ -278,6 +301,10 @@ function M.new_runtime(config)
         return true
     end
 
+    ---Apply spotlight/render changes for this runtime.
+    ---@param full_scan boolean
+    ---@param reason string
+    ---@return boolean
     function runtime.apply(full_scan, reason)
         if runtime.state.in_progress then
             return false
@@ -387,6 +414,8 @@ function M.new_runtime(config)
         return true
     end
 
+    ---Schedule a delayed full apply for transition/spawn recovery paths.
+    ---@param reason string
     function runtime.schedule_apply(reason)
         if should_skip_apply_when_disabled(reason) then
             return
@@ -400,12 +429,15 @@ function M.new_runtime(config)
         end, runtime.config.transition_apply_delay_ms)
     end
 
+    ---Start the periodic backup loop (idempotent).
     function runtime.start_backup_loop()
         scheduler_mod.start_backup_loop(runtime.state, runtime.config, function()
             runtime.apply(false, "backup_tick")
         end)
     end
 
+    ---Fast path for newly spawned spotlights discovered via NotifyOnNewObject.
+    ---@param light any
     function runtime.on_spotlight_spawned(light)
         if runtime.state.disabled == true then
             return
@@ -442,12 +474,15 @@ function M.new_runtime(config)
         end
     end
 
+    ---Rebuild baselines from current spotlight values, then re-apply once.
     function runtime.rebaseline()
         local updated = spotlight_mod.rebaseline_spotlights(runtime.state)
         log(string.format("rebaseline updated=%d", updated))
         runtime.apply(false, "rebaseline")
     end
 
+    ---Restore captured values and disable runtime auto-application.
+    ---@return boolean
     function runtime.restore()
         local ok, err = safe_call(function()
             perform_restore("command_restore")
@@ -464,6 +499,8 @@ function M.new_runtime(config)
         return true
     end
 
+    ---Restore captured values and disable runtime auto-application.
+    ---@return boolean
     function runtime.disable()
         runtime.state.stats.disable_runs = runtime.state.stats.disable_runs + 1
 
@@ -482,6 +519,7 @@ function M.new_runtime(config)
         return true
     end
 
+    ---@return string
     function runtime.status_line()
         local s = runtime.state.stats
         return string.format(
@@ -520,6 +558,7 @@ function M.new_runtime(config)
         )
     end
 
+    ---Emit status and last_error lines to log output.
     function runtime.print_status()
         log(runtime.status_line())
         local err = runtime.state.stats.last_error

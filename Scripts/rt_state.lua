@@ -1,9 +1,13 @@
 local stats_mod = require("rt_stats")
 
+---Runtime state factory for coordinator instances.
 local M = {
     __tajsgraph_module = "rt_state"
 }
 
+---Create a fresh mutable runtime state bucket.
+---@param config table
+---@return table
 function M.new_state(config)
     return {
         config = config,

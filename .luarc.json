@@ -1,9 +1,13 @@
 {
   "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
   "runtime.version": "Lua 5.4",
+  "diagnostics.libraryFiles": "Disable",
   "workspace.checkThirdParty": false,
+  "workspace.ignoreDir": [
+    "../shared/**",
+    "../../RE-UE4SS/**"
+  ],
   "workspace.library": [
-    "./Scripts",
     "./luastubs",
     "../shared/Types.lua",
     "../shared/types",

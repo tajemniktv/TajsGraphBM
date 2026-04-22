@@ -1,11 +1,16 @@
 local log_mod = require("rt_log")
 
+---Scheduling helpers for delayed apply and backup loop behavior.
 local M = {
     __tajsgraph_module = "rt_scheduler"
 }
 
 local safe_call = log_mod.safe_call
 
+---Schedule a delayed apply using the best available UE4SS delay primitive.
+---@param state table
+---@param callback fun()
+---@param delay_ms number
 function M.schedule_apply(state, callback, delay_ms)
     if type(RetriggerableExecuteInGameThreadWithDelay) == "function" and type(MakeActionHandle) == "function" then
         if type(state.transition_apply_handle) ~= "number" then
@@ -42,6 +47,10 @@ function M.schedule_apply(state, callback, delay_ms)
     callback()
 end
 
+---Start the periodic backup loop once (idempotent per state generation).
+---@param state table
+---@param config table
+---@param tick_fn fun()
 function M.start_backup_loop(state, config, tick_fn)
     if state.loop_started then
         return

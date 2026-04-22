@@ -1,3 +1,6 @@
+---Main UE4SS entrypoint.
+---Loads runtime/config modules, registers console commands and startup hooks.
+---@diagnostic disable: need-check-nil
 local function require_module(name, marker)
     if type(require) ~= "function" then
         return nil, "require unavailable"
@@ -46,6 +49,8 @@ if type(SHARED) ~= "table" then
     rawset(_G, "__tajsgraphbm_shared", SHARED)
 end
 
+---@param value any
+---@return string
 local function format_value(value)
     if type(value) == "string" then
         return string.format("%q", value)
@@ -56,6 +61,8 @@ local function format_value(value)
     return tostring(value)
 end
 
+---@param raw any
+---@return boolean|nil
 local function parse_bool_token(raw)
     local token = string.lower(tostring(raw or ""))
     if token == "1" or token == "true" or token == "on" or token == "yes" then
@@ -67,6 +74,7 @@ local function parse_bool_token(raw)
     return nil
 end
 
+---@return table
 local function load_config_from_store()
     local overrides, load_err = config_store_module.load_user_overrides()
     if load_err ~= nil then
@@ -95,6 +103,9 @@ for _, key in ipairs(config_module.numeric_keys or {}) do
     NUMERIC_KEY_SET[key] = true
 end
 
+---@param key string
+---@param raw_value any
+---@return any, string|nil
 local function coerce_config_value(key, raw_value)
     if NUMERIC_KEY_SET[key] == true then
         local parsed = tonumber(raw_value)
@@ -123,6 +134,9 @@ local function coerce_config_value(key, raw_value)
     return nil, "unsupported key type"
 end
 
+---@param name string
+---@param fn fun()
+---@return boolean
 local function safe_run(name, fn)
     local ok, err = pcall(fn)
     if not ok then
@@ -133,6 +147,7 @@ local function safe_run(name, fn)
     return true
 end
 
+---@return boolean, string|nil
 local function persist_config_to_disk()
     local ok_save, save_err = config_store_module.save_user_overrides(CONFIG, config_module.defaults or {})
     if not ok_save then
@@ -141,6 +156,8 @@ local function persist_config_to_disk()
     return true, nil
 end
 
+---@param next_config table
+---@return boolean, string|nil
 local function update_runtime_config(next_config)
     local normalized = config_module.normalize(next_config or {})
     local ok_set, set_err = runtime.set_config(normalized)
@@ -152,6 +169,8 @@ local function update_runtime_config(next_config)
     return true, nil
 end
 
+---@param args string[]
+---@return boolean, string|nil
 local function ui_get(args)
     local key = tostring(args[1] or "")
     if not config_module.is_known_key(key) then
@@ -162,6 +181,8 @@ local function ui_get(args)
     return true, nil
 end
 
+---@param args string[]
+---@return boolean, string|nil
 local function ui_set(args)
     local key = tostring(args[1] or "")
     local value_token = args[2]
@@ -192,6 +213,7 @@ local function ui_set(args)
     return true, nil
 end
 
+---@return boolean, string|nil
 local function ui_apply()
     local ok = runtime.apply(true, "command")
     if not ok then
@@ -201,6 +223,7 @@ local function ui_apply()
     return true, nil
 end
 
+---@return boolean, string|nil
 local function ui_reload()
     local loaded = load_config_from_store()
     local ok_update, update_err = update_runtime_config(loaded)
@@ -217,6 +240,7 @@ local function ui_reload()
     return true, nil
 end
 
+---@return boolean, string|nil
 local function ui_save()
     local ok_save, save_err = persist_config_to_disk()
     if not ok_save then
@@ -226,6 +250,7 @@ local function ui_save()
     return true, nil
 end
 
+---@return boolean, string|nil
 local function ui_reset_core()
     local next_config = {}
     for cfg_key, cfg_value in pairs(CONFIG) do
@@ -249,6 +274,7 @@ local function ui_reset_core()
     return true, nil
 end
 
+---@return boolean, string|nil
 local function ui_status()
     log("ui.status begin")
     log("ui.status config_path=" .. tostring(config_store_module.get_user_config_path()))
@@ -260,6 +286,7 @@ local function ui_status()
     return true, nil
 end
 
+---Register all `tajsgraph` and `tajsgraph.ui.*` console aliases.
 local function register_commands()
     local register_command = nil
     local backend = nil
@@ -276,6 +303,10 @@ local function register_commands()
         return
     end
 
+    ---Slice command parts to a dense argument list from `start_index`.
+    ---@param parts any
+    ---@param start_index integer
+    ---@return string[]
     local function slice_parts(parts, start_index)
         local out = {}
         if type(parts) ~= "table" then
@@ -289,6 +320,10 @@ local function register_commands()
         return out
     end
 
+    ---Resolve and execute the matched command action.
+    ---@param cmd string
+    ---@param parts any
+    ---@return boolean
     local function dispatch_command(cmd, parts)
         local cmd_lower = string.lower(tostring(cmd or ""))
         local part1 = ""
@@ -413,6 +448,11 @@ local function register_commands()
 
     SHARED.command_dispatch = dispatch_command
 
+    ---Console callback wrapper with panic protection and diagnostics.
+    ---@param cmd string
+    ---@param parts any
+    ---@param ar any
+    ---@return boolean
     local function command_wrapper(cmd, parts, ar)
         local _ = ar
         local ok, handled_or_err = pcall(function()
@@ -483,6 +523,7 @@ local function register_commands()
     ))
 end
 
+---Register Ctrl+Shift+F9 helper hotkey for opening the UI tab.
 local function register_ui_hotkey()
     if SHARED.ui_hotkey_registered == true then
         return
@@ -521,6 +562,7 @@ local function register_ui_hotkey()
     log("diag ui hotkey registered Ctrl+Shift+F9")
 end
 
+---Register transition hooks that trigger deferred runtime apply.
 local function register_transition_hooks()
     if CONFIG.auto_apply_on_transition ~= true then
         log("diag transition auto-apply disabled")
@@ -542,6 +584,7 @@ local function register_transition_hooks()
     -- Skip registering it to avoid startup error spam.
 end
 
+---Register SpotLightComponent spawn listener for incremental patching.
 local function register_spawn_listener()
     if CONFIG.auto_apply_on_spawn ~= true then
         log("diag spawn auto-apply disabled")

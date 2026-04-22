@@ -1,5 +1,6 @@
 -- ue4ss_runtime_stubs.lua
 -- Stubs for UE4SS runtime-provided globals to satisfy the Lua language server diagnostics.
+-- This file is development-only and should not be required at runtime.
 
 ---@param offset number
 ---@return number

@@ -15,9 +15,13 @@
     "--compile-commands-dir=${workspaceFolder}/.build/ninja-dev"
   ],
   "Lua.runtime.version": "Lua 5.4",
+  "Lua.diagnostics.libraryFiles": "Disable",
   "Lua.workspace.checkThirdParty": false,
+  "Lua.workspace.ignoreDir": [
+    "../shared/**",
+    "../../RE-UE4SS/**"
+  ],
   "Lua.workspace.library": [
-    "${workspaceFolder}/Scripts",
     "${workspaceFolder}/luastubs",
     "${workspaceFolder}/../shared/Types.lua",
     "${workspaceFolder}/../shared/types",

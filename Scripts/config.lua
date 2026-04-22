@@ -1,3 +1,5 @@
+---Central config schema/defaults and normalization utilities.
+---This module is the source of truth for runtime key names and value kinds.
 local M = {
     __tajsgraph_module = "config"
 }
@@ -162,6 +164,8 @@ for _, key in ipairs(BOOL_KEYS) do
     KEY_KIND[key] = "boolean"
 end
 
+---@param key any
+---@return "string"|"number"|"boolean"|nil
 function M.key_kind(key)
     if type(key) ~= "string" then
         return nil
@@ -169,10 +173,14 @@ function M.key_kind(key)
     return KEY_KIND[key]
 end
 
+---@param key string
+---@return boolean
 function M.is_known_key(key)
     return M.key_kind(key) ~= nil
 end
 
+---@param key string
+---@return boolean
 function M.is_core_ui_key(key)
     if type(key) ~= "string" then
         return false
@@ -185,6 +193,10 @@ function M.is_core_ui_key(key)
     return false
 end
 
+---Normalize and sanitize a config table in-place.
+---Adds defaults, keeps legacy aliases in sync, and clamps numeric bounds.
+---@param config table|nil
+---@return table
 function M.normalize(config)
     if type(config) ~= "table" then
         config = {}

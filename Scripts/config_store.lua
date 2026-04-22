@@ -1,13 +1,18 @@
+---Persistence helper for user config overrides.
+---Reads/writes `user_config.lua` in the mod root.
 local M = {
     __tajsgraph_module = "config_store"
 }
 
 local USER_CONFIG_FILENAME = "user_config.lua"
 
+---@param path string|nil
+---@return string
 local function normalize_path(path)
     return string.gsub(tostring(path or ""), "\\", "/")
 end
 
+---@return string
 local function get_mod_root()
     local debug_info = debug.getinfo(1, "S")
     if type(debug_info) ~= "table" or type(debug_info.source) ~= "string" then
@@ -36,10 +41,14 @@ end
 local MOD_ROOT = get_mod_root()
 local USER_CONFIG_PATH = normalize_path(MOD_ROOT .. "/" .. USER_CONFIG_FILENAME)
 
+---@param value any
+---@return string
 local function quote_string(value)
     return string.format("%q", tostring(value))
 end
 
+---@param value any
+---@return string|nil
 local function serialize_value(value)
     local value_type = type(value)
     if value_type == "boolean" then
@@ -54,6 +63,8 @@ local function serialize_value(value)
     return nil
 end
 
+---@param defaults table
+---@return string[]
 local function collect_export_keys(defaults)
     local keys = {}
     for key in pairs(defaults) do
@@ -64,10 +75,12 @@ local function collect_export_keys(defaults)
     return keys
 end
 
+---@return string
 function M.get_user_config_path()
     return USER_CONFIG_PATH
 end
 
+---@return table, string|nil
 function M.load_user_overrides()
     if type(io) ~= "table" or type(io.open) ~= "function" then
         return {}, "io.open unavailable"
@@ -99,6 +112,9 @@ function M.load_user_overrides()
     return data_or_err, nil
 end
 
+---@param config table
+---@param defaults table
+---@return boolean, string|nil
 function M.save_user_overrides(config, defaults)
     if type(config) ~= "table" then
         return false, "config must be table"

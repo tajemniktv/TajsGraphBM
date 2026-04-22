@@ -1,6 +1,7 @@
 local log_mod = require("rt_log")
 local obj_mod = require("rt_object")
 
+---Spotlight discovery/tuning/cache/restore logic.
 local M = {
     __tajsgraph_module = "rt_spotlight"
 }
@@ -57,6 +58,8 @@ local FIELD_TO_SETTER = {
 
 local safe_call = log_mod.safe_call
 
+---@param snapshot table|nil
+---@return table|nil
 local function copy_snapshot(snapshot)
     if type(snapshot) ~= "table" then
         return nil
@@ -69,10 +72,19 @@ local function copy_snapshot(snapshot)
     return result
 end
 
+---@param a number
+---@param b number
+---@return boolean
 local function nearly_equal(a, b)
     return math.abs(a - b) <= EPSILON
 end
 
+---@param light any
+---@param field string
+---@param target boolean
+---@param setter_name string|nil
+---@param force_write boolean
+---@return boolean
 local function write_bool_if_needed(light, field, target, setter_name, force_write)
     local ok_current, current = obj_mod.read_bool_property(light, field)
     if (not force_write) and ok_current and current == target then
@@ -88,6 +100,12 @@ local function write_bool_if_needed(light, field, target, setter_name, force_wri
     return obj_mod.safe_set(light, field, target)
 end
 
+---@param light any
+---@param field string
+---@param target number
+---@param setter_name string|nil
+---@param force_write boolean
+---@return boolean
 local function write_number_if_needed(light, field, target, setter_name, force_write)
     local ok_current, current = obj_mod.read_numeric_property(light, field)
     if (not force_write) and ok_current and nearly_equal(current, target) then
@@ -97,6 +115,8 @@ local function write_number_if_needed(light, field, target, setter_name, force_w
     return obj_mod.set_number_with_setter(light, field, target, setter_name)
 end
 
+---@param light any
+---@return table
 local function capture_snapshot(light)
     local snapshot = {}
     for _, field in ipairs(TUNABLE_FIELDS) do
@@ -134,6 +154,10 @@ local function capture_snapshot(light)
     return snapshot
 end
 
+---@param config table
+---@param entry table
+---@param field string
+---@return number|nil
 local function compute_target(config, entry, field)
     local baseline_value = entry.baseline and entry.baseline[field] or nil
     if type(baseline_value) ~= "number" then
@@ -158,6 +182,9 @@ local function compute_target(config, entry, field)
     return baseline_value * multiplier_value
 end
 
+---@param state table
+---@param light any
+---@return table|nil
 local function upsert_light(state, light)
     if not obj_mod.is_valid_object(light) then
         return nil
@@ -183,6 +210,12 @@ local function upsert_light(state, light)
     return entry
 end
 
+---Apply runtime compatibility and numeric tuning to one cached spotlight entry.
+---@param state table
+---@param config table
+---@param entry table
+---@param force_refresh boolean
+---@return boolean
 local function apply_entry(state, config, entry, force_refresh)
     local light = entry.obj
     if not obj_mod.is_valid_object(light) then
@@ -314,6 +347,7 @@ local function apply_entry(state, config, entry, force_refresh)
     return true
 end
 
+---@param state table
 function M.discover_spotlights(state)
     local found = 0
     local list = nil
@@ -341,12 +375,19 @@ function M.discover_spotlights(state)
     state.stats.lights_found = found
 end
 
+---@param state table
+---@param config table
+---@param force_refresh boolean
 function M.apply_spotlights(state, config, force_refresh)
     for _, entry in pairs(state.light_entries) do
         apply_entry(state, config, entry, force_refresh == true)
     end
 end
 
+---@param state table
+---@param config table
+---@param light any
+---@return boolean
 function M.apply_spawned_spotlight(state, config, light)
     local entry = upsert_light(state, light)
     if entry == nil then
@@ -358,6 +399,8 @@ function M.apply_spawned_spotlight(state, config, light)
     return true
 end
 
+---@param state table
+---@return integer
 function M.rebaseline_spotlights(state)
     local updated = 0
     for _, entry in pairs(state.light_entries) do
@@ -370,6 +413,9 @@ function M.rebaseline_spotlights(state)
     return updated
 end
 
+---@param state table
+---@param detail_logger fun(message:string, key:string)|nil
+---@return table
 function M.restore_spotlights(state, detail_logger)
     local summary = {
         attempted = 0,
@@ -507,6 +553,7 @@ function M.restore_spotlights(state, detail_logger)
     return summary
 end
 
+---@param state table
 function M.prune_spotlight_cache(state)
     for key, entry in pairs(state.light_entries) do
         if entry.seen_cycle ~= state.apply_cycle and (not obj_mod.is_valid_object(entry.obj)) then
@@ -521,6 +568,8 @@ function M.prune_spotlight_cache(state)
     state.stats.lights_cached = count
 end
 
+---@param config table
+---@return boolean
 function M.is_tuning_effective(config)
     if config.spotlight_tune_enabled ~= true then
         return false

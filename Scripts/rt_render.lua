@@ -2,6 +2,7 @@ local log_mod = require("rt_log")
 local obj_mod = require("rt_object")
 local stats_mod = require("rt_stats")
 
+---Render-side compatibility writer/restorer (MegaLights + Lumen paths).
 local M = {
     __tajsgraph_module = "rt_render"
 }
@@ -10,6 +11,8 @@ local log = log_mod.log
 local safe_call = log_mod.safe_call
 local MISSING = {}
 
+---@param t table|nil
+---@return integer
 local function count_table_entries(t)
     if type(t) ~= "table" then
         return 0
@@ -22,6 +25,10 @@ local function count_table_entries(t)
     return count
 end
 
+---Cache an object's original field value for later restore.
+---@param state table
+---@param obj any
+---@param field string
 local function track_original_value(state, obj, field)
     if type(state) ~= "table" or type(field) ~= "string" then
         return
@@ -59,11 +66,21 @@ local function track_original_value(state, obj, field)
     end
 end
 
+---@param state table
+---@param obj any
+---@param field string
+---@param value any
+---@param on_operation fun(bucket:string, success:boolean)|nil
+---@param bucket string
+---@return boolean
 local function tracked_guarded_write(state, obj, field, value, on_operation, bucket)
     track_original_value(state, obj, field)
     return obj_mod.guarded_write(obj, field, value, on_operation, bucket)
 end
 
+---@param targets any[]
+---@param seen table<string, boolean>
+---@param obj any
 local function add_unique_target(targets, seen, obj)
     if not obj_mod.is_valid_object(obj) then
         return
@@ -77,6 +94,7 @@ local function add_unique_target(targets, seen, obj)
     table.insert(targets, obj)
 end
 
+---@return any[]
 local function collect_renderer_targets()
     local targets = {}
     local seen = {}
@@ -110,6 +128,7 @@ local function collect_renderer_targets()
     return targets
 end
 
+---@return any[]
 local function collect_postprocess_volumes()
     local ok_find, result = safe_call(function()
         if type(FindAllOf) == "function" then
@@ -124,6 +143,7 @@ local function collect_postprocess_volumes()
     return {}
 end
 
+---@return any[]
 local function collect_world_settings()
     local worlds = {}
     local seen = {}
@@ -176,6 +196,9 @@ local function collect_world_settings()
     return worlds
 end
 
+---Apply runtime render compatibility settings to discovered renderer targets.
+---@param state table
+---@param config table
 function M.apply_render_compat(state, config)
     if state.disabled == true then
         return
@@ -296,6 +319,10 @@ function M.apply_render_compat(state, config)
     end
 end
 
+---Restore previously tracked render settings to their original values.
+---@param state table
+---@param config table|nil
+---@return {restored:integer, failed:integer}
 function M.restore_render_compat(state, config)
     local restored = 0
     local failed = 0
